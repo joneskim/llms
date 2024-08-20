@@ -15,8 +15,8 @@
 5. [Additional Configuration](#additional-configuration)
    - [Setting up a Requirements File](#setting-up-a-requirements-file)
    - [Configuring Environment Variables](#configuring-environment-variables)
-6. [Troubleshooting](#troubleshooting)
-7. [Conclusion](#conclusion)
+6. [Services Setup](#services-setup)
+   - [Data Analysis Service](#data-analysis-service)
 
 ## Introduction
 
@@ -66,47 +66,56 @@ npm is required to manage packages for the frontend.
 
 After installation, verify the installation by running:
 ```bash
-node -v
-npm -v
+node --version
+npm --version
 ```
+
 ## Backend Setup
 
 ### Create a Virtual Environment
 
-To isolate the project's dependencies from system-wide packages, create a virtual environment using `venv`:
+Create a new virtual environment for your project using Python's `venv` module.
+
 ```bash
-python3 -m venv llms-env
+python -m venv llms-backend-env
 ```
-Activate the environment:
-```bash
-source llms-env/bin/activate  # macOS/Linux
-llms-env\Scripts\activate  # Windows
-```
+
+Activate the virtual environment:
+
+- **Windows:** `llms-backend-env\Scripts\activate`
+- **macOS and Linux:** `source llms-backend-env/bin/activate`
+
 ### Install Backend Dependencies
 
-Install the required packages for the backend using `pip`:
-```
+Install dependencies for your backend project using pip.
+
+```bash
 pip install -r requirements.txt
 ```
+
 ### Run the Backend Server
 
-Run the backend server using the following command:
-```
-python app.py
+Run your main.py file in the llms-backend folder to start the backend server:
+
+```bash
+python main.py
 ```
 
 ## Frontend Setup
 
 ### Install Frontend Dependencies
 
-Install the required packages for the frontend using `npm`:
-```
+Install dependencies for your frontend project using npm.
+
+```bash
 npm install
 ```
+
 ### Run the Frontend Server
 
-Run the frontend server using the following command:
-```
+Start the frontend server by running the following command in the llms-frontend folder:
+
+```bash
 npm start
 ```
 
@@ -114,14 +123,18 @@ npm start
 
 ### Setting up a Requirements File
 
-Create a `requirements.txt` file to manage dependencies for the backend. You can use pip's built-in feature to generate this file:
-```
-pip freeze > requirements.txt
-```
+Create a `requirements.txt` file in your llms-backend folder to specify dependencies for your backend project.
+
 ### Configuring Environment Variables
 
-Set environment variables for your project by creating a `.env` file in the root directory. For example, you can set `PORT=5000` for the backend server.
+Configure environment variables as needed for your project. For example, you can set environment variables in your `main.py` file using Python's built-in `os` 
+module.
 
-## Troubleshooting
+## Services Setup
 
-If you encounter any issues during setup or runtime, refer to the troubleshooting section for common errors and solutions.
+### Data Analysis Service
+
+The data-analysis service is responsible for processing and analyzing data for the LLMS. To set up this service:
+
+1. Install dependencies: `pip install -r requirements.txt`
+2. Run the service: `python data_analysis_service.py`
