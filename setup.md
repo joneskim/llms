@@ -160,24 +160,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'llms.settings'
 ```
 ## Services Setup
 
-### Data Analysis Service
-
-To set up the data analysis service, follow these steps:
-
-1. Create a new file named `data_analysis_service.py` in your project directory.
-2. Add the following code:
-```python
-import pandas as pd
-
-def analyze_data(df):
-    # Analyze the data and return the results
-    pass
-
-if __name__ == '__main__':
-    df = pd.read_csv('data.csv')
-    analyze_data(df)
-```
-This service will read a CSV file named `data.csv` and analyze the data using the `pandas` library.
+Could do csv's
 
 ## Troubleshooting Tips
 
