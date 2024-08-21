@@ -35,6 +35,20 @@ check_and_kill_port() {
     fi
 }
 
+# Function to install an npm package for the frontend
+install_frontend_package() {
+    PACKAGE_NAME=$1
+    if [ -z "$PACKAGE_NAME" ]; then
+        echo "Error: No package name provided."
+        exit 1
+    fi
+    echo "Installing npm package '$PACKAGE_NAME'..."
+    cd services/frontend || exit
+    npm install "$PACKAGE_NAME"
+    cd - || exit
+    echo "Package '$PACKAGE_NAME' installed successfully."
+}
+
 # Function to run the backend service
 run_backend() {
     check_and_kill_port 8000
@@ -67,10 +81,24 @@ run_data_analysis() {
     echo "Data Analysis Service started on http://localhost:8500"
 }
 
+# Function to reset the database
+reset_db() {
+    DB_PATH="services/backend/data/database.db"
+    echo "Resetting the database..."
+    if [ -f "$DB_PATH" ]; then
+        rm "$DB_PATH"
+        echo "Database deleted."
+    fi
+    activate_venv
+    echo "Initializing the database..."
+    python3 services/backend/db/init_db.py
+    echo "Database initialized successfully."
+}
+
 # Function to show usage information
 show_help() {
-    echo "Usage: $0 {backend|frontend|data_analysis|all}"
-    echo "Run the specified service(s)."
+    echo "Usage: $0 {backend|frontend|data_analysis|all|reset_db|install_frontend_package PACKAGE_NAME}"
+    echo "Run the specified service(s) or reset the database."
 }
 
 # Check if a command is passed
@@ -94,6 +122,12 @@ case "$1" in
         run_backend
         run_frontend
         run_data_analysis
+        ;;
+    reset_db)
+        reset_db
+        ;;
+    ifp | install_frontend_package | fnpm-install) 
+        install_frontend_package "$2"
         ;;
     *)
         show_help
