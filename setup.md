@@ -1,170 +1,159 @@
-# Local Learning Management System (LLMS) Setup Documentation
+**Local Learning Management System (LLMS) - Setup and Start Guide**
+===============================
 
-## Table of Contents
-1. [Introduction](#introduction)
-2. [Prerequisites](#prerequisites)
-   - [Python Installation](#python-installation)
-   - [Node.js and npm Installation](#nodejs-and-npm-installation)
-3. [Backend Setup](#backend-setup)
-   - [Create a Virtual Environment](#create-a-virtual-environment)
-   - [Install Backend Dependencies](#install-backend-dependencies)
-   - [Run the Backend Server](#run-the-backend-server)
-4. [Frontend Setup](#frontend-setup)
-   - [Install Frontend Dependencies](#install-frontend-dependencies)
-   - [Run the Frontend Server](#run-the-frontend-server)
-5. [Additional Configuration](#additional-configuration)
-   - [Setting up a Requirements File](#setting-up-a-requirements-file)
-   - [Configuring Environment Variables](#configuring-environment-variables)
-6. [Services Setup](#services-setup)
-   - [Data Analysis Service](#data-analysis-service)
-7. [Troubleshooting Tips](#troubleshooting-tips)
+### Table of Contents
+* Introduction
+* Prerequisites
+* Python Installation
+* Node.js Installation
+* Git Installation
+* Environment Setup
+* Project Setup
+* Clone the Repository
+* Virtual Environment Setup
+* Install Dependencies
+* Using the run.sh Script
+* Starting Individual Services
+* Starting All Services
+* Stopping Services
+* Troubleshooting
+* Conclusion
 
-## Introduction
+### Introduction
+This guide provides comprehensive instructions for setting up the Local 
+Learning Management System (LLMS) on your local machine and starting the 
+services. The LLMS consists of multiple services, including a backend 
+(FastAPI), frontend (React), and a data analysis service. These services 
+are managed and run using a single Bash script.
 
-This documentation provides a comprehensive guide to setting up the development environment for the Local Learning Management System (LLMS). The LLMS is a 
-web-based application that allows users to manage and track their learning progress.
+### Prerequisites
+Before setting up the project, ensure your system meets the following 
+prerequisites:
 
-The setup process involves installing Python and Node.js, creating virtual environments, installing dependencies, running servers, and configuring environment 
-variables. This documentation aims to provide detailed instructions on how to perform these tasks.
-
-## Prerequisites
-
-Before starting the setup process, ensure your system meets the following prerequisites:
-
-* **Operating System:** Windows, macOS, or Linux
-* **Python:** Version 3.8 or later
-* **Node.js:** Version 14.x or later (includes npm)
-
-### Python Installation
-
-To install Python, follow these steps:
-
-1. Download the Python installer from the [official website](https://www.python.org/downloads/).
-2. Run the installer, and make sure to check the option to "Add Python to PATH" during installation.
-
-Alternatively, you can use a package manager like Homebrew (macOS) or your package manager (Linux):
-
-```bash
-brew install python  # macOS
-sudo apt-get install python3  # Ubuntu/Linux
+* **Python Installation**
+	+ Version: Python 3.8 or later
+	+ Installation: Download and install Python from the official website.
+	+ Verify Installation:
 ```
-
-### Node.js and npm Installation
-
-To install Node.js, follow these steps:
-
-1. Download the Node.js installer from the [official website](https://nodejs.org/).
-2. Run the installer, and make sure to check the option to "Add Node.js to PATH" during installation.
-
-Alternatively, you can use a package manager like Homebrew (macOS) or your package manager (Linux):
-
-```bash
-brew install node  # macOS
-sudo apt-get install nodejs npm  # Ubuntu/Linux
+bash
+Copy code
+python --version
 ```
-
-After installation, verify the installation by running:
-
-```bash
+* **Node.js Installation**
+	+ Version: Node.js 14.x or later
+	+ Installation: Download and install Node.js from the official website.
+	+ Verify Installation:
+```
+bash
+Copy code
 node --version
 npm --version
 ```
-
-## Backend Setup
-
-### Create a Virtual Environment
-
-To create a virtual environment for your backend project, follow these steps:
-
-1. Open a terminal or command prompt.
-2. Navigate to the directory where you want to create the virtual environment.
-3. Run the following command:
-```bash
-python -m venv llms-backend-env
+* **Git Installation**
+	+ Installation: Download and install Git from the official website.
+	+ Verify Installation:
 ```
-This will create a new virtual environment named `llms-backend-env`.
-
-### Install Backend Dependencies
-
-To install dependencies for your backend project, follow these steps:
-
-1. Activate the virtual environment:
-        * **Windows:** `llms-backend-env\Scripts\activate`
-        * **macOS and Linux:** `source llms-backend-env/bin/activate`
-2. Run the following command:
-```bash
-pip install -r requirements.txt
+bash
+Copy code
+git --version
 ```
-This will install all dependencies listed in your `requirements.txt` file.
 
-### Run the Backend Server
+### Environment Setup
+* Terminal: Use a terminal or command prompt. On Windows, you can use Git 
+Bash, WSL, or the native Command Prompt.
 
-To run the backend server, follow these steps:
+**Setup GitHub to use SSH instead of HTTP**
 
-1. Activate the virtual environment:
-        * **Windows:** `llms-backend-env\Scripts\activate`
-        * **macOS and Linux:** `source llms-backend-env/bin/activate`
-2. Run the following command:
-```bash
-python main.py
+We recommend setting up GitHub to use SSH instead of HTTP for increased 
+security and ease of use. To do this:
+
+1. Generate an SSH key pair:
 ```
-This will start the backend server.
+bash
+Copy code
+ssh-keygen -t rsa -b 4096
+```
+2. Add the public key to your GitHub account:
+	+ Go to your GitHub settings > SSH and GPG keys
+	+ Click "New SSH key" and paste the contents of the public key file 
+(usually `id_rsa.pub`)
+3. Configure Git to use SSH:
+```
+bash
+Copy code
+git config --global url."https://github.com/".insteadOf 
+"ssh://github.com/"
+```
 
-## Frontend Setup
+### Project Setup
+* **Clone the Repository**
+Open your terminal and clone the LLMS repository:
+```
+bash
+Copy code
+git clone git@github.com:your-repo/llms.git
+cd llms
+```
 
-### Install Frontend Dependencies
+### Virtual Environment Setup
+* Create a shared virtual environment:
+```
+bash
+Copy code
+python -m venv llms-env
+```
+* Activate the virtual environment:
+	+ Windows: `llms-env\Scripts\activate`
+	+ macOS/Linux: `source llms-env/bin/activate`
 
-To install dependencies for your frontend project, follow these steps:
-
-1. Open a terminal or command prompt.
-2. Navigate to the directory where you want to create the virtual environment.
-3. Run the following command:
-```bash
+### Install Dependencies
+* Install Python dependencies for the backend and data analysis services:
+```
+bash
+Copy code
+pip install -r services/backend/requirements.txt
+pip install -r services/data_analysis/requirements.txt
+```
+* Install Node.js dependencies for the frontend service:
+```
+bash
+Copy code
+cd services/frontend
 npm install
+cd ../..
 ```
-This will install all dependencies listed in your `package.json` file.
 
-### Run the Frontend Server
+### Using the run.sh Script
+The `run.sh` script is designed to manage the services for the LLMS 
+project. You can start individual services or all services at once.
 
-To run the frontend server, follow these steps:
+### Starting Individual Services
+* To start a specific service (backend, frontend, or data analysis):
+	+ Backend Service: `./run.sh backend`
+	+ Frontend Service: `./run.sh frontend`
+	+ Data Analysis Service: `./run.sh data_analysis`
+Each service will be accessible at the following URLs:
+	+ Backend: http://localhost:8000
+	+ Frontend: http://localhost:3000
+	+ Data Analysis: http://localhost:8500
 
-1. Open a terminal or command prompt.
-2. Navigate to the directory where you want to create the virtual environment.
-3. Run the following command:
-```bash
-npm start
+### Starting All Services
+* To start all services at once:
 ```
-This will start the frontend server.
-
-## Additional Configuration
-
-### Setting up a Requirements File
-
-To set up a requirements file for your backend project, follow these steps:
-
-1. Create a new file named `requirements.txt` in your project directory.
-2. Add the dependencies you want to install to the file, one per line:
-```text
-numpy==1.20.0
-pandas==1.3.5
+bash
+Copy code
+./run.sh all
 ```
-### Configuring Environment Variables
+This command will start the backend, frontend, and data analysis services 
+simultaneously.
 
-To configure environment variables for your project, follow these steps:
+### Stopping Services
+To stop the services, you can manually kill the processes using their 
+process IDs (PIDs) or simply close the terminal window running the 
+services. If you start services in the background using &, you can bring 
+them to the foreground using `fg` and then use `Ctrl+C` to terminate.
 
-1. Create a new file named `env.py` in your project directory.
-2. Add the environment variables you want to set, one per line:
-```python
-import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'llms.settings'
-```
-## Services Setup
+**You are now ready to develop and use your LLMS!**
 
-Could do csv's
-
-## Troubleshooting Tips
-
-* If you encounter any issues during the setup process, try checking the installation logs for errors.
-* Make sure to activate the correct virtual environment before running your code.
-* Verify that all dependencies are installed correctly by running `pip freeze` and `npm list`.
-* Check the server logs for any error messages if the backend or frontend servers fail to start.
+I hope this revised guide is helpful in setting up your Local Learning 
+Management System (LLMS). Happy coding!
