@@ -46,9 +46,7 @@ your machine. You can download and install Python from the official
 website.
 
 * Verify Installation:
-```
-bash
-Copy code
+```bash
 python --version
 ```
 
@@ -57,9 +55,7 @@ You will also need to have Node.js 14.x or later installed on your
 machine. You can download and install Node.js from the official website.
 
 * Verify Installation:
-```
-bash
-Copy code
+```bash
 node --version
 npm --version
 ```
@@ -69,9 +65,7 @@ Finally, you will need to have Git installed on your machine. You can
 download and install Git from the official website.
 
 * Verify Installation:
-```
-bash
-Copy code
+```bash
 git --version
 ```
 
