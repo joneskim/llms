@@ -2,56 +2,73 @@
 ===============================
 
 ### Table of Contents
-* Introduction
-* Prerequisites
-* Python Installation
-* Node.js Installation
-* Git Installation
-* Environment Setup
-* Project Setup
-* Clone the Repository
-* Virtual Environment Setup
-* Install Dependencies
-* Using the run.sh Script
-* Starting Individual Services
-* Starting All Services
-* Stopping Services
-* Troubleshooting
-* Conclusion
+* [Introduction](#introduction)
+* [Prerequisites](#prerequisites)
+	+ [Python Installation](#python-installation)
+	+ [Node.js Installation](#node-js-installation)
+	+ [Git Installation](#git-installation)
+* [Environment Setup](#environment-setup)
+	+ [Setup GitHub to use SSH instead of 
+HTTP](#setup-github-to-use-ssh-instead-of-http)
+* [Project Setup](#project-setup)
+	+ [Clone the Repository](#clone-the-repository)
+* [Virtual Environment Setup](#virtual-environment-setup)
+	+ [Create a shared virtual 
+environment](#create-a-shared-virtual-environment)
+	+ [Activate the virtual environment](#activate-the-virtual-environment)
+* [Install Dependencies](#install-dependencies)
+	+ [Python dependencies for the backend and data analysis 
+services](#python-dependencies-for-the-backend-and-data-analysis-services)
+	+ [Node.js dependencies for the frontend 
+service](#node-js-dependencies-for-the-frontend-service)
+* [Using the run.sh Script](#using-the-run-sh-script)
+	+ [Starting Individual Services](#starting-individual-services)
+	+ [Starting All Services](#starting-all-services)
+	+ [Stopping Services](#stopping-services)
+* [Troubleshooting](#troubleshooting)
+* [Conclusion](#conclusion)
 
 ### Introduction
-This guide provides comprehensive instructions for setting up the Local 
-Learning Management System (LLMS) on your local machine and starting the 
-services. The LLMS consists of multiple services, including a backend 
-(FastAPI), frontend (React), and a data analysis service. These services 
-are managed and run using a single Bash script.
+The Local Learning Management System (LLMS) is a comprehensive solution 
+for managing and analyzing learning data. It consists of multiple 
+services, including a backend (FastAPI), frontend (React), and a data 
+analysis service. These services are managed and run using a single Bash 
+script.
 
 ### Prerequisites
+
 Before setting up the project, ensure your system meets the following 
 prerequisites:
 
-* **Python Installation**
-	+ Version: Python 3.8 or later
-	+ Installation: Download and install Python from the official website.
-	+ Verify Installation:
+#### Python Installation
+To use the LLMS, you will need to have Python 3.8 or later installed on 
+your machine. You can download and install Python from the official 
+website.
+
+* Verify Installation:
 ```
 bash
 Copy code
 python --version
 ```
-* **Node.js Installation**
-	+ Version: Node.js 14.x or later
-	+ Installation: Download and install Node.js from the official website.
-	+ Verify Installation:
+
+#### Node.js Installation
+You will also need to have Node.js 14.x or later installed on your 
+machine. You can download and install Node.js from the official website.
+
+* Verify Installation:
 ```
 bash
 Copy code
 node --version
 npm --version
 ```
-* **Git Installation**
-	+ Installation: Download and install Git from the official website.
-	+ Verify Installation:
+
+#### Git Installation
+Finally, you will need to have Git installed on your machine. You can 
+download and install Git from the official website.
+
+* Verify Installation:
 ```
 bash
 Copy code
@@ -59,101 +76,103 @@ git --version
 ```
 
 ### Environment Setup
-* Terminal: Use a terminal or command prompt. On Windows, you can use Git 
-Bash, WSL, or the native Command Prompt.
 
-**Setup GitHub to use SSH instead of HTTP**
+Before setting up the project, make sure that your environment is properly 
+set up:
 
-We recommend setting up GitHub to use SSH instead of HTTP for increased 
-security and ease of use. To do this:
+#### Setup GitHub to use SSH instead of HTTP
+To connect to GitHub using SSH, you will need to generate a public-private 
+key pair and add the public key to your GitHub account.
 
-1. Generate an SSH key pair:
-```
-bash
-Copy code
-ssh-keygen -t rsa -b 4096
-```
-2. Add the public key to your GitHub account:
-	+ Go to your GitHub settings > SSH and GPG keys
-	+ Click "New SSH key" and paste the contents of the public key file 
-(usually `id_rsa.pub`)
-3. Configure Git to use SSH:
-```
-bash
-Copy code
-git config --global url."https://github.com/".insteadOf 
-"ssh://github.com/"
-```
+* Follow these steps:
+	1. Open a terminal or command prompt.
+	2. Run the following command to generate a new key pair: `ssh-keygen -t 
+rsa -b 4096`
+	3. When prompted for a file name, enter a path where you want to save the 
+key (e.g., `/Users/username/.ssh/id_rsa`).
+	4. Add the public key to your GitHub account by going to your profile 
+settings, then clicking on "SSH and GPG keys" and adding the new key.
 
 ### Project Setup
-* **Clone the Repository**
-Open your terminal and clone the LLMS repository:
+
+To set up the project, follow these steps:
+
+#### Clone the Repository
+Clone the LLMS repository from GitHub using SSH:
 ```
-bash
-Copy code
-git clone git@github.com:your-repo/llms.git
-cd llms
+git clone git@github.com:your-username/LLMS.git
 ```
+
+Replace `your-username` with your actual username on GitHub.
 
 ### Virtual Environment Setup
-* Create a shared virtual environment:
+
+The LLMS uses a virtual environment to manage its dependencies. Follow 
+these steps to set up and activate the virtual environment:
+
+#### Create a shared virtual environment
+Create a new directory for the virtual environment:
 ```
-bash
-Copy code
-python -m venv llms-env
+mkdir llms-env
 ```
-* Activate the virtual environment:
-	+ Windows: `llms-env\Scripts\activate`
-	+ macOS/Linux: `source llms-env/bin/activate`
+
+Activate the virtual environment:
+```
+source llms-env/bin/activate
+```
 
 ### Install Dependencies
-* Install Python dependencies for the backend and data analysis services:
+
+Install the dependencies required by the LLMS using pip and npm:
+
+#### Python dependencies for the backend and data analysis services
+Run the following command to install the Python dependencies:
 ```
-bash
-Copy code
-pip install -r services/backend/requirements.txt
-pip install -r services/data_analysis/requirements.txt
+pip install -r requirements.txt
 ```
-* Install Node.js dependencies for the frontend service:
+
+#### Node.js dependencies for the frontend service
+Run the following command to install the Node.js dependencies:
 ```
-bash
-Copy code
-cd services/frontend
 npm install
-cd ../..
 ```
 
 ### Using the run.sh Script
-The `run.sh` script is designed to manage the services for the LLMS 
-project. You can start individual services or all services at once.
 
-### Starting Individual Services
-* To start a specific service (backend, frontend, or data analysis):
-	+ Backend Service: `./run.sh backend`
-	+ Frontend Service: `./run.sh frontend`
-	+ Data Analysis Service: `./run.sh data_analysis`
-Each service will be accessible at the following URLs:
-	+ Backend: http://localhost:8000
-	+ Frontend: http://localhost:3000
-	+ Data Analysis: http://localhost:8500
+The LLMS uses a single Bash script, `run.sh`, to start and manage its 
+services. Follow these steps to use the script:
 
-### Starting All Services
-* To start all services at once:
+#### Starting Individual Services
+To start an individual service, simply run the corresponding command from 
+the `run.sh` file:
 ```
-bash
-Copy code
+./run.sh backend
+```
+
+```
+./run.sh frontend
+```
+
+```
+./run.sh data-analysis
+```
+
+#### Starting All Services
+To start all services at once, run the following command:
+```
 ./run.sh all
 ```
-This command will start the backend, frontend, and data analysis services 
-simultaneously.
 
-### Stopping Services
-To stop the services, you can manually kill the processes using their 
-process IDs (PIDs) or simply close the terminal window running the 
-services. If you start services in the background using &, you can bring 
-them to the foreground using `fg` and then use `Ctrl+C` to terminate.
+#### Stopping Services
+To stop a service just cancel the terminal its on or Control + C.
 
-**You are now ready to develop and use your LLMS!**
+### Troubleshooting
 
-I hope this revised guide is helpful in setting up your Local Learning 
-Management System (LLMS). Happy coding!
+If you encounter any issues while setting up or using the LLMS, refer to 
+the troubleshooting guide for help.
+
+### Conclusion
+Congratulations! You have now successfully set up and started the Local 
+Learning Management System (LLMS). The LLMS is a powerful tool for 
+managing and analyzing learning data, and with this documentation, you 
+should be able to get started quickly. Happy coding!
