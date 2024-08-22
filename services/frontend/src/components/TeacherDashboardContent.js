@@ -1,6 +1,35 @@
 import React, { useState } from 'react';
-import { Box, SimpleGrid, Stat, StatLabel, StatNumber, useColorModeValue, Flex, Heading, Select, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Tabs, TabList, TabPanels, Tab, TabPanel, Button, ButtonGroup, Badge } from '@chakra-ui/react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+    Box,
+    SimpleGrid,
+    Stat,
+    StatLabel,
+    StatNumber,
+    Flex,
+    Heading,
+    Select,
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    Tabs,
+    TabList,
+    TabPanels,
+    Tab,
+    TabPanel,
+    Badge,
+    useColorModeValue,
+} from '@chakra-ui/react';
+import {
+    BarChart,
+    Bar,
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from 'recharts';
 import { FiUsers, FiBarChart2, FiPieChart } from 'react-icons/fi';
 
 // Utility functions to generate random dates and scores
@@ -35,7 +64,7 @@ const mockCourses = [
             },
         })),
     },
-    // You can add more courses and students as needed
+    // Additional courses and students can be added here
 ];
 
 // Helper functions to calculate statistics
@@ -49,7 +78,9 @@ const calculateMedian = (scores) => {
     if (scores.length === 0) return 0;
     const sortedScores = scores.slice().sort((a, b) => a - b);
     const mid = Math.floor(sortedScores.length / 2);
-    return sortedScores.length % 2 !== 0 ? sortedScores[mid] : ((sortedScores[mid - 1] + sortedScores[mid]) / 2).toFixed(2);
+    return sortedScores.length % 2 !== 0
+        ? sortedScores[mid]
+        : ((sortedScores[mid - 1] + sortedScores[mid]) / 2).toFixed(2);
 };
 
 const binScores = (scores, binSize) => {
@@ -95,6 +126,10 @@ const StatsCard = ({ title, stat, icon }) => {
 };
 
 const TeacherDashboardContent = () => {
+    const bgColor = useColorModeValue('gray.100', 'gray.900');
+    const barChartFill = useColorModeValue('#8884d8', '#82ca9d');
+    const lineChartStroke = useColorModeValue('#8884d8', '#82ca9d');
+
     const activeCourses = mockCourses.filter((course) => course.active);
     const [selectedCourse, setSelectedCourse] = useState(activeCourses[0]);
     const [selectedModule, setSelectedModule] = useState(selectedCourse.modules[0]);
@@ -130,8 +165,19 @@ const TeacherDashboardContent = () => {
 
     const binnedScores = binScores(quizScores, 5);
 
+    // Detailed stats for the selected student
+    const studentQuizScores = selectedStudent?.course_progress.quiz_scores || [];
+    const studentScoreTrends = studentQuizScores.map(score => ({
+        quiz: score.quiz,
+        score: score.score,
+    }));
+
+    const studentQuizScoreData = studentQuizScores.map(q => q.score);
+    const meanScore = calculateMean(studentQuizScoreData);
+    const medianScore = calculateMedian(studentQuizScoreData);
+
     return (
-        <Box p={6} bg={useColorModeValue('gray.100', 'gray.900')}>
+        <Box p={6} bg={bgColor}>
             {/* Header Section */}
             <Flex justifyContent="space-between" alignItems="center" mb={6}>
                 <Heading as="h1" size="xl" color={useColorModeValue('gray.800', 'white')}>
@@ -185,23 +231,23 @@ const TeacherDashboardContent = () => {
             {/* Course Stats */}
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={6}>
                 <StatsCard title={'Total Students'} stat={selectedCourse.students.length} icon={<FiUsers size={'3em'} />} />
-                <StatsCard title={'Average Score'} stat={`${calculateMean(quizScores)}%`} icon={<FiBarChart2 size={'3em'} />} />
-                <StatsCard title={'Median Score'} stat={`${calculateMedian(quizScores)}%`} icon={<FiBarChart2 size={'3em'} />} />
-                <StatsCard title={'Pass Rate'} stat={`${(quizScores.filter((score) => score >= 70).length / quizScores.length * 100).toFixed(2)}%`} icon={<FiPieChart size={'3em'} />} />
+                <StatsCard title={'Average Score'} stat={`${meanScore}%`} icon={<FiBarChart2 size={'3em'} />} />
+                <StatsCard title={'Median Score'} stat={`${medianScore}%`} icon={<FiPieChart size={'3em'} />} />
+                <StatsCard title={'Pass Rate'} stat={`${(selectedCourse.students.filter((s) => s.course_progress.quiz_scores.some((q) => q.score >= 60)).length / selectedCourse.students.length * 100).toFixed(2)}%`} icon={<FiPieChart size={'3em'} />} />
             </SimpleGrid>
 
-            {/* Histogram for Quiz Score Distribution */}
-            <Box mb={10}>
-                <Heading as="h4" size="md" mb={4}>
+            {/* Quiz Score Distribution */}
+            <Box mb={6}>
+                <Heading as="h3" size="lg" mb={4}>
                     Quiz Score Distribution
                 </Heading>
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={binnedScores} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={binnedScores}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="bin" />
                         <YAxis />
                         <Tooltip />
-                        <Bar dataKey="count" fill={useColorModeValue('#8884d8', '#82ca9d')} />
+                        <Bar dataKey="count" fill={barChartFill} />
                     </BarChart>
                 </ResponsiveContainer>
             </Box>
@@ -212,16 +258,45 @@ const TeacherDashboardContent = () => {
                     <Heading as="h4" size="md" mb={4}>
                         Detailed Statistics for {selectedStudent.student_name}
                     </Heading>
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                        <Stat>
-                            <StatLabel>Average Score</StatLabel>
-                            <StatNumber>{calculateMean(selectedStudent.course_progress.quiz_scores.map(q => q.score))}%</StatNumber>
-                        </Stat>
-                        <Stat>
-                            <StatLabel>Attendance Rate</StatLabel>
-                            <StatNumber>{selectedStudent.course_progress.attendance_rate}%</StatNumber>
-                        </Stat>
-                    </SimpleGrid>
+                    <Tabs variant="enclosed">
+                        <TabList>
+                            <Tab>Overview</Tab>
+                            <Tab>Quiz Trends</Tab>
+                        </TabList>
+
+                        <TabPanels>
+                            <TabPanel>
+                                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                                    <Stat>
+                                        <StatLabel>Average Score</StatLabel>
+                                        <StatNumber>{meanScore}%</StatNumber>
+                                    </Stat>
+                                    <Stat>
+                                        <StatLabel>Median Score</StatLabel>
+                                        <StatNumber>{medianScore}%</StatNumber>
+                                    </Stat>
+                                    <Stat>
+                                        <StatLabel>Attendance Rate</StatLabel>
+                                        <StatNumber>{selectedStudent.course_progress.attendance_rate}%</StatNumber>
+                                    </Stat>
+                                </SimpleGrid>
+                            </TabPanel>
+                            <TabPanel>
+                                <Heading as="h5" size="sm" mb={4}>
+                                    Score Trends Across Quizzes
+                                </Heading>
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <LineChart data={studentScoreTrends}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="quiz" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Line type="monotone" dataKey="score" stroke={lineChartStroke} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </TabPanel>
+                        </TabPanels>
+                    </Tabs>
                 </Box>
             )}
         </Box>
