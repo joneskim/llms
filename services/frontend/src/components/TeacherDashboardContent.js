@@ -1,75 +1,66 @@
-// src/components/TeacherDashboardContent.js
 import React, { useState } from 'react';
-import { Box, SimpleGrid, Stat, StatLabel, StatNumber, useColorModeValue, Flex, Heading, Select } from '@chakra-ui/react';
+import { Box, SimpleGrid, Stat, StatLabel, StatNumber, useColorModeValue, Flex, Heading, Select, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Tabs, TabList, TabPanels, Tab, TabPanel, Button, ButtonGroup, Badge } from '@chakra-ui/react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { FiBook, FiFileText, FiUsers } from 'react-icons/fi';
+import { FiUsers, FiBarChart2, FiPieChart } from 'react-icons/fi';
 
-// Mock data structure with classes and students
+// Utility functions to generate random dates and scores
+const generateRandomDate = (start, end) => {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+};
+
+const generateRandomScores = (numScores) => {
+    return Array.from({ length: numScores }, (_, index) => ({
+        quiz: `Quiz ${index + 1}`,
+        date: generateRandomDate(new Date(2024, 0, 1), new Date(2024, 11, 31)),
+        score: Math.floor(Math.random() * 51) + 50, // random score between 50 and 100
+    }));
+};
+
+// Generate mock data for courses and students
 const mockCourses = [
     {
         course_name: 'Math 101',
-        students: [
+        active: true,
+        modules: [
             {
-                student_name: 'Alice',
-                course_progress: {
-                    completed_modules: 5,
-                    total_modules: 5,
-                    score: 90,
-                    grade_trend: [
-                        { date: '2024-01-01', grade: 85 },
-                        { date: '2024-02-01', grade: 88 },
-                        { date: '2024-03-01', grade: 90 },
-                    ],
-                },
-            },
-            {
-                student_name: 'Bob',
-                course_progress: {
-                    completed_modules: 4,
-                    total_modules: 5,
-                    score: 70,
-                    grade_trend: [
-                        { date: '2024-01-01', grade: 65 },
-                        { date: '2024-02-01', grade: 68 },
-                        { date: '2024-03-01', grade: 70 },
-                    ],
-                },
+                module_name: 'Algebra',
+                quizzes: Array.from({ length: 20 }, (_, index) => `Quiz ${index + 1}`),
             },
         ],
-    },
-    {
-        course_name: 'Physics 201',
-        students: [
-            {
-                student_name: 'Alice',
-                course_progress: {
-                    completed_modules: 3,
-                    total_modules: 6,
-                    score: 85,
-                    grade_trend: [
-                        { date: '2024-01-01', grade: 80 },
-                        { date: '2024-02-01', grade: 83 },
-                        { date: '2024-03-01', grade: 85 },
-                    ],
-                },
+        students: Array.from({ length: 120 }, (_, index) => ({
+            student_name: `Student ${index + 1}`,
+            course_progress: {
+                attendance_rate: Math.floor(Math.random() * 10) + 90,
+                quiz_scores: generateRandomScores(20),
             },
-            {
-                student_name: 'Bob',
-                course_progress: {
-                    completed_modules: 6,
-                    total_modules: 6,
-                    score: 95,
-                    grade_trend: [
-                        { date: '2024-01-01', grade: 90 },
-                        { date: '2024-02-01', grade: 92 },
-                        { date: '2024-03-01', grade: 95 },
-                    ],
-                },
-            },
-        ],
+        })),
     },
-    // Add more courses and students as needed
+    // You can add more courses and students as needed
 ];
+
+// Helper functions to calculate statistics
+const calculateMean = (scores) => {
+    if (scores.length === 0) return 0;
+    const total = scores.reduce((acc, score) => acc + score, 0);
+    return (total / scores.length).toFixed(2);
+};
+
+const calculateMedian = (scores) => {
+    if (scores.length === 0) return 0;
+    const sortedScores = scores.slice().sort((a, b) => a - b);
+    const mid = Math.floor(sortedScores.length / 2);
+    return sortedScores.length % 2 !== 0 ? sortedScores[mid] : ((sortedScores[mid - 1] + sortedScores[mid]) / 2).toFixed(2);
+};
+
+const binScores = (scores, binSize) => {
+    const bins = {};
+    scores.forEach((score) => {
+        const bin = Math.floor(score / binSize) * binSize;
+        if (!bins[bin]) bins[bin] = 0;
+        bins[bin]++;
+    });
+    return Object.keys(bins).map((bin) => ({ bin: `${bin}-${+bin + binSize - 1}`, count: bins[bin] }));
+};
 
 const StatsCard = ({ title, stat, icon }) => {
     const bgColor = useColorModeValue('white', 'gray.800');
@@ -104,94 +95,135 @@ const StatsCard = ({ title, stat, icon }) => {
 };
 
 const TeacherDashboardContent = () => {
-    const [selectedCourse, setSelectedCourse] = useState(mockCourses[0]);
-    const [selectedStudent, setSelectedStudent] = useState(mockCourses[0].students[0]);
+    const activeCourses = mockCourses.filter((course) => course.active);
+    const [selectedCourse, setSelectedCourse] = useState(activeCourses[0]);
+    const [selectedModule, setSelectedModule] = useState(selectedCourse.modules[0]);
+    const [selectedQuiz, setSelectedQuiz] = useState(selectedCourse.modules[0].quizzes[0]);
+    const [selectedStudent, setSelectedStudent] = useState(null);
 
-    const handleCourseChange = (e) => {
-        const course = mockCourses.find((c) => c.course_name === e.target.value);
+    const handleCourseChange = (courseName) => {
+        const course = activeCourses.find((c) => c.course_name === courseName);
         setSelectedCourse(course);
-        setSelectedStudent(course.students[0]); // Reset the student selection when the course changes
+        setSelectedModule(course.modules[0]);
+        setSelectedQuiz(course.modules[0].quizzes[0]);
+        setSelectedStudent(null); // Reset the student selection when the course changes
     };
 
-    const handleStudentChange = (e) => {
-        const student = selectedCourse.students.find((s) => s.student_name === e.target.value);
-        setSelectedStudent(student);
+    const handleModuleChange = (moduleName) => {
+        const module = selectedCourse.modules.find((m) => m.module_name === moduleName);
+        setSelectedModule(module);
+        setSelectedQuiz(module.quizzes[0]);
     };
 
-    const cardBgColor = useColorModeValue('white', 'gray.800');
-    const cardBorderColor = useColorModeValue('gray.200', 'gray.700');
+    const handleQuizChange = (quizName) => {
+        setSelectedQuiz(quizName);
+    };
+
+    const handleStudentChange = (studentName) => {
+        const student = selectedCourse.students.find((s) => s.student_name === studentName);
+        setSelectedStudent(student || null);
+    };
+
+    const quizScores = selectedCourse.students
+        .map((student) => student.course_progress.quiz_scores.find((q) => q.quiz === selectedQuiz)?.score)
+        .filter((score) => score !== undefined);
+
+    const binnedScores = binScores(quizScores, 5);
 
     return (
         <Box p={6} bg={useColorModeValue('gray.100', 'gray.900')}>
-            <Heading as="h2" size="lg" mb={6}>
-                Teacher Dashboard
-            </Heading>
-
-            {/* General Overview Section */}
-            <Heading as="h3" size="md" mb={4}>
-                General Overview
-            </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={6}>
-                <StatsCard title={'Total Courses'} stat={mockCourses.length} icon={<FiBook size={'3em'} />} />
-                <StatsCard title={'Total Students'} stat={mockCourses.reduce((acc, course) => acc + course.students.length, 0)} icon={<FiUsers size={'3em'} />} />
-            </SimpleGrid>
-
-            {/* Course and Student Selection */}
-            <Box mt={10}>
-                <Heading as="h3" size="md" mb={4}>
-                    Select Course and Student
+            {/* Header Section */}
+            <Flex justifyContent="space-between" alignItems="center" mb={6}>
+                <Heading as="h1" size="xl" color={useColorModeValue('gray.800', 'white')}>
+                    {selectedCourse.course_name} <Badge colorScheme={selectedCourse.active ? 'green' : 'red'}>{selectedCourse.active ? 'Active' : 'Inactive'}</Badge>
                 </Heading>
-                <Select placeholder="Select course" onChange={handleCourseChange} mb={4} value={selectedCourse.course_name}>
-                    {mockCourses.map((course, index) => (
-                        <option key={index} value={course.course_name}>
+                <Breadcrumb>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink href="#">Home</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbItem isCurrentPage>
+                        <BreadcrumbLink href="#">{selectedCourse.course_name}</BreadcrumbLink>
+                    </BreadcrumbItem>
+                </Breadcrumb>
+            </Flex>
+
+            {/* Course, Module, Quiz, and Student Selectors */}
+            <Box mb={6}>
+                <Select mb={3} value={selectedCourse.course_name} onChange={(e) => handleCourseChange(e.target.value)}>
+                    {activeCourses.map((course) => (
+                        <option key={course.course_name} value={course.course_name}>
                             {course.course_name}
                         </option>
                     ))}
                 </Select>
-                <Select placeholder="Select student" onChange={handleStudentChange} mb={6} value={selectedStudent.student_name}>
-                    {selectedCourse.students.map((student, index) => (
-                        <option key={index} value={student.student_name}>
-                            {student.student_name}
+
+                <Select mb={3} value={selectedModule.module_name} onChange={(e) => handleModuleChange(e.target.value)}>
+                    {selectedCourse.modules.map((module) => (
+                        <option key={module.module_name} value={module.module_name}>
+                            {module.module_name}
                         </option>
                     ))}
                 </Select>
 
-                {selectedStudent && (
-                    <Box>
-                        <Heading as="h4" size="md" mb={4}>
-                            {selectedStudent.student_name}'s Progress in {selectedCourse.course_name}
-                        </Heading>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <BarChart
-                                data={[selectedStudent.course_progress]}
-                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="course_name" />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar dataKey="completed_modules" fill="#3182ce" name="Completed Modules" />
-                                <Bar dataKey="total_modules" fill="#82ca9d" name="Total Modules" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                <Select mb={3} value={selectedQuiz} onChange={(e) => handleQuizChange(e.target.value)}>
+                    {selectedModule.quizzes.map((quiz) => (
+                        <option key={quiz} value={quiz}>
+                            {quiz}
+                        </option>
+                    ))}
+                </Select>
 
-                        <Box mt={10}>
-                            <Heading as="h4" size="md" mb={4}>
-                                {selectedStudent.student_name}'s Grade Trend in {selectedCourse.course_name}
-                            </Heading>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={selectedStudent.course_progress.grade_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="date" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Line type="monotone" dataKey="grade" stroke="#8884d8" activeDot={{ r: 8 }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </Box>
-                    </Box>
-                )}
+                <Select mb={3} placeholder="Select Student" onChange={(e) => handleStudentChange(e.target.value)}>
+                    {selectedCourse.students.map((student) => (
+                        <option key={student.student_name} value={student.student_name}>
+                            {student.student_name}
+                        </option>
+                    ))}
+                </Select>
             </Box>
+
+            {/* Course Stats */}
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={6}>
+                <StatsCard title={'Total Students'} stat={selectedCourse.students.length} icon={<FiUsers size={'3em'} />} />
+                <StatsCard title={'Average Score'} stat={`${calculateMean(quizScores)}%`} icon={<FiBarChart2 size={'3em'} />} />
+                <StatsCard title={'Median Score'} stat={`${calculateMedian(quizScores)}%`} icon={<FiBarChart2 size={'3em'} />} />
+                <StatsCard title={'Pass Rate'} stat={`${(quizScores.filter((score) => score >= 70).length / quizScores.length * 100).toFixed(2)}%`} icon={<FiPieChart size={'3em'} />} />
+            </SimpleGrid>
+
+            {/* Histogram for Quiz Score Distribution */}
+            <Box mb={10}>
+                <Heading as="h4" size="md" mb={4}>
+                    Quiz Score Distribution
+                </Heading>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={binnedScores} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="bin" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill={useColorModeValue('#8884d8', '#82ca9d')} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </Box>
+
+            {/* Detailed Statistics for Selected Student */}
+            {selectedStudent && (
+                <Box mt={6}>
+                    <Heading as="h4" size="md" mb={4}>
+                        Detailed Statistics for {selectedStudent.student_name}
+                    </Heading>
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                        <Stat>
+                            <StatLabel>Average Score</StatLabel>
+                            <StatNumber>{calculateMean(selectedStudent.course_progress.quiz_scores.map(q => q.score))}%</StatNumber>
+                        </Stat>
+                        <Stat>
+                            <StatLabel>Attendance Rate</StatLabel>
+                            <StatNumber>{selectedStudent.course_progress.attendance_rate}%</StatNumber>
+                        </Stat>
+                    </SimpleGrid>
+                </Box>
+            )}
         </Box>
     );
 };
