@@ -11,3 +11,5 @@ export const CourseList = (props) => (
         </Datagrid>
     </List>
 );
+
+export default CourseList;
