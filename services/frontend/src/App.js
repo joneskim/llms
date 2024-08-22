@@ -1,27 +1,27 @@
-import React, { useState } from 'react';
-import { analyzeData } from './services/ApiService';
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import Course from './pages/Course';
+import Assignments from './pages/Assignments';
+import Quizzes from './pages/Quizzes';
+import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 
-function App() {
-    const [data, setData] = useState([]);
-    const [analysisResult, setAnalysisResult] = useState(null);
-
-    const handleAnalyze = async () => {
-        try {
-            const result = await analyzeData(data);
-            setAnalysisResult(result);
-        } catch (error) {
-            console.error("Failed to analyze data", error);
-        }
-    };
-
-    return (
-        <div>
-            <h1>LLMS Classroom</h1>
-            {/* Add form to input data */}
-            <button onClick={handleAnalyze}>Analyze Data</button>
-            {analysisResult && <pre>{JSON.stringify(analysisResult, null, 2)}</pre>}
-        </div>
-    );
-}
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/course/:id" element={<Course />} />
+        <Route path="/assignments" element={<Assignments />} />
+        <Route path="/quizzes" element={<Quizzes />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/" element={<Dashboard />} />
+      </Routes>
+    </Router>
+  );
+};
 
 export default App;
