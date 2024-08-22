@@ -1,0 +1,87 @@
+/* src/AdminDashboard.css */
+
+.appbar {
+    background-color: #1e3a8a; /* Custom dark blue color */
+    z-index: 1201; /* Ensures the app bar is above the drawer */
+}
+
+.title {
+    flex-grow: 1;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    color: #fff;
+}
+
+.logout-button {
+    font-weight: bold;
+    color: #ff6b6b; /* Custom red color for the logout button */
+}
+
+.drawer {
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.drawer-paper {
+    width: 240px;
+    background-color: #1f2937; /* Custom dark gray for the sidebar */
+    color: #ffffff; /* White text color */
+}
+
+.drawer .MuiListItemIcon-root {
+    color: #9ca3af; /* Lighter gray for icons */
+}
+
+.drawer .MuiListItem-root:hover {
+    background-color: #374151; /* Darker gray on hover */
+}
+
+.content {
+    flex-grow: 1;
+    padding: 24px;
+    background-color: #f9fafb; /* Light background color */
+    min-height: 100vh;
+}
+
+/* Custom styling for Cards */
+.card {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 24px;
+    padding: 24px;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Typography */
+h2 {
+    color: #1e3a8a; /* Matching the app bar color */
+    margin-bottom: 16px;
+    font-weight: bold;
+}
+
+p {
+    color: #4b5563; /* Medium gray color */
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    padding: 16px;
+    background-color: #1f2937;
+    color: #ffffff;
+    text-align: center;
+}
+
+.footer a {
+    color: #ff6b6b;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
