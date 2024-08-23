@@ -1,11 +1,16 @@
 // src/index.js
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { ChakraProvider } from '@chakra-ui/react';
+import { createRoot } from 'react-dom/client';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import App from './App';
-ReactDOM.render(
-    <ChakraProvider>
-        <App />
-    </ChakraProvider>,
-    document.getElementById('root')
+import theme from './theme'; // Ensure this is the correct path to your theme.js
+
+const container = document.getElementById('root');
+const root = createRoot(container);
+
+root.render(
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <App />
+  </ThemeProvider>
 );

@@ -1,0 +1,343 @@
+{
+    "teachers": [
+      {
+        "teacher_id": 101,
+        "username": "einstein",
+        "password": "123",
+        "name": "Dr. Albert Einstein",
+        "courses": [
+          {
+            "course_id": 1001,
+            "course_name": "Physics 101",
+            "modules": [
+              {
+                "module_id": 10001,
+                "module_name": "Classical Mechanics",
+                "assignments": [
+                  { "assignment_id": 100001, "title": "Newton's Laws", "due_date": "2024-09-15" },
+                  { "assignment_id": 100002, "title": "Conservation of Energy", "due_date": "2024-09-30" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000001, "title": "Mechanics Quiz", "date": "2024-09-20" }
+                ]
+              },
+              {
+                "module_id": 10002,
+                "module_name": "Thermodynamics",
+                "assignments": [
+                  { "assignment_id": 100003, "title": "Heat Transfer", "due_date": "2024-10-15" },
+                  { "assignment_id": 100004, "title": "Entropy", "due_date": "2024-10-30" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000002, "title": "Thermodynamics Quiz", "date": "2024-10-25" }
+                ]
+              }
+            ],
+            "students": [1, 2, 3, 4, 5]
+          },
+          {
+            "course_id": 1002,
+            "course_name": "Quantum Physics",
+            "modules": [
+              {
+                "module_id": 10003,
+                "module_name": "Wave-Particle Duality",
+                "assignments": [
+                  { "assignment_id": 100005, "title": "Double-Slit Experiment", "due_date": "2024-11-15" },
+                  { "assignment_id": 100006, "title": "Uncertainty Principle", "due_date": "2024-11-30" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000003, "title": "Quantum Basics Quiz", "date": "2024-11-20" }
+                ]
+              }
+            ],
+            "students": [6, 7, 8, 9, 10]
+          }
+        ]
+      },
+      {
+        "teacher_id": 102,
+        "username": "curie",
+        "password": "123",
+        "name": "Dr. Marie Curie",
+        "courses": [
+          {
+            "course_id": 1003,
+            "course_name": "Chemistry 101",
+            "modules": [
+              {
+                "module_id": 10004,
+                "module_name": "Atomic Structure",
+                "assignments": [
+                  { "assignment_id": 100007, "title": "Electron Configuration", "due_date": "2024-09-20" },
+                  { "assignment_id": 100008, "title": "Periodic Table Trends", "due_date": "2024-10-05" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000004, "title": "Atoms Quiz", "date": "2024-09-30" }
+                ]
+              }
+            ],
+            "students": [11, 12, 13, 14, 15]
+          },
+          {
+            "course_id": 1004,
+            "course_name": "Radiochemistry",
+            "modules": [
+              {
+                "module_id": 10005,
+                "module_name": "Radioactive Decay",
+                "assignments": [
+                  { "assignment_id": 100009, "title": "Half-Life Calculations", "due_date": "2024-10-25" },
+                  { "assignment_id": 100010, "title": "Radiation Safety", "due_date": "2024-11-10" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000005, "title": "Radioactivity Quiz", "date": "2024-11-05" }
+                ]
+              }
+            ],
+            "students": [16, 17, 18, 19, 20]
+          }
+        ]
+      },
+      {
+        "teacher_id": 103,
+        "username": "darwin",
+        "password": "123",
+        "name": "Dr. Charles Darwin",
+        "courses": [
+          {
+            "course_id": 1005,
+            "course_name": "Evolutionary Biology",
+            "modules": [
+              {
+                "module_id": 10006,
+                "module_name": "Natural Selection",
+                "assignments": [
+                  { "assignment_id": 100011, "title": "Adaptation Case Studies", "due_date": "2024-09-25" },
+                  { "assignment_id": 100012, "title": "Genetic Drift Analysis", "due_date": "2024-10-10" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000006, "title": "Evolution Basics Quiz", "date": "2024-10-05" }
+                ]
+              }
+            ],
+            "students": [21, 22, 23, 24, 25]
+          }
+        ]
+      },
+      {
+        "teacher_id": 104,
+        "username": "turing",
+        "password": "123",
+        "name": "Dr. Alan Turing",
+        "courses": [
+          {
+            "course_id": 1006,
+            "course_name": "Computer Science Fundamentals",
+            "modules": [
+              {
+                "module_id": 10007,
+                "module_name": "Algorithms and Data Structures",
+                "assignments": [
+                  { "assignment_id": 100013, "title": "Sorting Algorithms", "due_date": "2024-09-30" },
+                  { "assignment_id": 100014, "title": "Graph Traversal", "due_date": "2024-10-15" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000007, "title": "Algorithms Quiz", "date": "2024-10-10" }
+                ]
+              }
+            ],
+            "students": [26, 27, 28, 29, 30]
+          }
+        ]
+      },
+      {
+        "teacher_id": 105,
+        "username": "hawking",
+        "password": "123",
+        "name": "Dr. Stephen Hawking",
+        "courses": [
+          {
+            "course_id": 1007,
+            "course_name": "Cosmology",
+            "modules": [
+              {
+                "module_id": 10008,
+                "module_name": "Black Holes",
+                "assignments": [
+                  { "assignment_id": 100015, "title": "Event Horizon Calculations", "due_date": "2024-10-05" },
+                  { "assignment_id": 100016, "title": "Hawking Radiation", "due_date": "2024-10-20" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000008, "title": "Black Holes Quiz", "date": "2024-10-15" }
+                ]
+              }
+            ],
+            "students": [31, 32, 33, 34, 35]
+          }
+        ]
+      },
+      {
+        "teacher_id": 106,
+        "username": "goodall",
+        "password": "123",
+        "name": "Dr. Jane Goodall",
+        "courses": [
+          {
+            "course_id": 1008,
+            "course_name": "Primatology",
+            "modules": [
+              {
+                "module_id": 10009,
+                "module_name": "Chimpanzee Behavior",
+                "assignments": [
+                  { "assignment_id": 100017, "title": "Field Observation Report", "due_date": "2024-10-10" },
+                  { "assignment_id": 100018, "title": "Social Structure Analysis", "due_date": "2024-10-25" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000009, "title": "Primate Behavior Quiz", "date": "2024-10-20" }
+                ]
+              }
+            ],
+            "students": [36, 37, 38, 39, 40]
+          }
+        ]
+      },
+      {
+        "teacher_id": 107,
+        "username": "bohr",
+        "password": "123",
+        "name": "Dr. Niels Bohr",
+        "courses": [
+          {
+            "course_id": 1009,
+            "course_name": "Atomic Physics",
+            "modules": [
+              {
+                "module_id": 10010,
+                "module_name": "Quantum Mechanics",
+                "assignments": [
+                  { "assignment_id": 100019, "title": "Schrödinger Equation", "due_date": "2024-10-15" },
+                  { "assignment_id": 100020, "title": "Atomic Spectra", "due_date": "2024-10-30" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000010, "title": "Quantum Mechanics Quiz", "date": "2024-10-25" }
+                ]
+              }
+            ],
+            "students": [41, 42, 43, 44, 45]
+          }
+        ]
+      },
+      {
+        "teacher_id": 108,
+        "username": "franklin",
+        "password": "123",
+        "name": "Dr. Rosalind Franklin",
+        "courses": [
+          {
+            "course_id": 1010,
+            "course_name": "Molecular Biology",
+            "modules": [
+              {
+                "module_id": 10011,
+                "module_name": "DNA Structure",
+                "assignments": [
+                  { "assignment_id": 100021, "title": "X-ray Crystallography", "due_date": "2024-10-20" },
+                  { "assignment_id": 100022, "title": "Genetic Mapping", "due_date": "2024-11-05" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000011, "title": "DNA Quiz", "date": "2024-10-30" }
+                ]
+              }
+            ],
+            "students": [46, 47, 48, 49, 50]
+          }
+        ]
+      },
+      {
+        "teacher_id": 109,
+        "username": "hawking",
+        "password": "123",
+        "name": "Dr. Stephen Hawking",
+        "courses": [
+          {
+            "course_id": 1011,
+            "course_name": "Advanced Cosmology",
+            "modules": [
+              {
+                "module_id": 10012,
+                "module_name": "Black Hole Thermodynamics",
+                "assignments": [
+                  { "assignment_id": 100023, "title": "Black Hole Entropy", "due_date": "2024-11-10" },
+                  { "assignment_id": 100024, "title": "Hawking Radiation Calculation", "due_date": "2024-11-25" }
+                ],
+                "quizzes": [
+                  { "quiz_id": 1000012, "title": "Advanced Cosmology Quiz", "date": "2024-11-15" }
+                ]
+              }
+            ],
+            "students": [51, 52, 53, 54, 55]
+          }
+        ]
+      }
+    ],
+    "students": [
+      { "student_id": 1, "name": "Alice Johnson", "courses": [1001, 1002] },
+      { "student_id": 2, "name": "Bob Smith", "courses": [1001] },
+      { "student_id": 3, "name": "Charlie Brown", "courses": [1001] },
+      { "student_id": 4, "name": "David Wilson", "courses": [1001] },
+      { "student_id": 5, "name": "Emily Davis", "courses": [1001] },
+      { "student_id": 6, "name": "Frank Moore", "courses": [1002] },
+      { "student_id": 7, "name": "Grace Taylor", "courses": [1002] },
+      { "student_id": 8, "name": "Hank Lee", "courses": [1002] },
+      { "student_id": 9, "name": "Ivy Green", "courses": [1002] },
+      { "student_id": 10, "name": "Jack Adams", "courses": [1002] },
+      { "student_id": 11, "name": "Kathy Martinez", "courses": [1003] },
+      { "student_id": 12, "name": "Liam Rodriguez", "courses": [1003] },
+      { "student_id": 13, "name": "Mia Lewis", "courses": [1003] },
+      { "student_id": 14, "name": "Noah Walker", "courses": [1003] },
+      { "student_id": 15, "name": "Olivia Hall", "courses": [1003] },
+      { "student_id": 16, "name": "Paul Young", "courses": [1004] },
+      { "student_id": 17, "name": "Quinn King", "courses": [1004] },
+      { "student_id": 18, "name": "Rita Scott", "courses": [1004] },
+      { "student_id": 19, "name": "Sam Carter", "courses": [1004] },
+      { "student_id": 20, "name": "Tina Wright", "courses": [1004] },
+      { "student_id": 21, "name": "Ursula Green", "courses": [1005] },
+      { "student_id": 22, "name": "Victor Harris", "courses": [1005] },
+      { "student_id": 23, "name": "Wendy Lewis", "courses": [1005] },
+      { "student_id": 24, "name": "Xander Morris", "courses": [1005] },
+      { "student_id": 25, "name": "Yara Collins", "courses": [1005] },
+      { "student_id": 26, "name": "Zachary Johnson", "courses": [1006] },
+      { "student_id": 27, "name": "Amelia Garcia", "courses": [1006] },
+      { "student_id": 28, "name": "Benjamin Wright", "courses": [1006] },
+      { "student_id": 29, "name": "Catherine Martinez", "courses": [1006] },
+      { "student_id": 30, "name": "Daniel Robinson", "courses": [1006] },
+      { "student_id": 31, "name": "Ella Thompson", "courses": [1007] },
+      { "student_id": 32, "name": "Felix White", "courses": [1007] },
+      { "student_id": 33, "name": "Gina Brown", "courses": [1007] },
+      { "student_id": 34, "name": "Henry Adams", "courses": [1007] },
+      { "student_id": 35, "name": "Iris Green", "courses": [1007] },
+      { "student_id": 36, "name": "Jackie Moore", "courses": [1008] },
+      { "student_id": 37, "name": "Kevin Scott", "courses": [1008] },
+      { "student_id": 38, "name": "Lara Turner", "courses": [1008] },
+      { "student_id": 39, "name": "Michael Anderson", "courses": [1008] },
+      { "student_id": 40, "name": "Nina Edwards", "courses": [1008] },
+      { "student_id": 41, "name": "Oscar Clark", "courses": [1009] },
+      { "student_id": 42, "name": "Paula Lewis", "courses": [1009] },
+      { "student_id": 43, "name": "Quincy Adams", "courses": [1009] },
+      { "student_id": 44, "name": "Riley Walker", "courses": [1009] },
+      { "student_id": 45, "name": "Sophie Harris", "courses": [1009] },
+      { "student_id": 46, "name": "Tom Collins", "courses": [1010] },
+      { "student_id": 47, "name": "Uma Young", "courses": [1010] },
+      { "student_id": 48, "name": "Vera Martin", "courses": [1010] },
+      { "student_id": 49, "name": "Will Robinson", "courses": [1010] },
+      { "student_id": 50, "name": "Xena Baker", "courses": [1010] },
+      { "student_id": 51, "name": "Yanni Gray", "courses": [1011] },
+      { "student_id": 52, "name": "Zara Mitchell", "courses": [1011] },
+      { "student_id": 53, "name": "Alice Murphy", "courses": [1011] },
+      { "student_id": 54, "name": "Bob Johnson", "courses": [1011] },
+      { "student_id": 55, "name": "Clara Kelly", "courses": [1011] }
+    ]
+  }
+  
