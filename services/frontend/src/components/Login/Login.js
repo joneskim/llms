@@ -1,15 +1,6 @@
-// src/components/Login/Login.js
-
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Paper,
-  Alert,
-} from '@mui/material';
-import { validateTeacherLogin } from '../../services/fakeApi';
+import { Box, Button, TextField, Typography, Paper } from '@mui/material';
+import { validateTeacherLogin } from '../../services/fakeApi'; // Adjust path if needed
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -17,35 +8,42 @@ const Login = ({ onLogin }) => {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    setError('');
-    const response = await validateTeacherLogin(username, password);
-    if (response) {
-      // Save login state to localStorage
-      localStorage.setItem('teacher_id', response.teacher_id);
-      localStorage.setItem('name', response.name);
-      onLogin(response.teacher_id);
-    } else {
-      setError('Invalid username or password.');
+    setError(''); // Clear any previous error
+    try {
+      const result = await validateTeacherLogin(username, password);
+      if (result) {
+        onLogin(result.teacher_id); // Pass teacher_id to parent
+      } else {
+        setError('Invalid username or password');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
 
   return (
     <Box
       display="flex"
-      justifyContent="center"
+      flexDirection="column"
       alignItems="center"
+      justifyContent="center"
       minHeight="100vh"
-      bgcolor="#f5f5f5"
+      padding={2}
+      sx={{ backgroundColor: '#1e1e2f' }}
     >
-      <Paper elevation={3} sx={{ padding: 4, width: 400 }}>
-        <Typography variant="h5" align="center" gutterBottom>
-          Teacher Login
+      <Paper
+        elevation={6}
+        sx={{
+          padding: 4,
+          maxWidth: 400,
+          width: '100%',
+          backgroundColor: '#2a2a3b',
+          color: '#fff',
+        }}
+      >
+        <Typography variant="h4" gutterBottom align="center">
+          Login
         </Typography>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
         <TextField
           label="Username"
           variant="outlined"
@@ -53,6 +51,18 @@ const Login = ({ onLogin }) => {
           margin="normal"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          sx={{
+            input: { color: '#fff' },
+            label: { color: '#bbb' },
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#555',
+              },
+              '&:hover fieldset': {
+                borderColor: '#888',
+              },
+            },
+          }}
         />
         <TextField
           label="Password"
@@ -62,13 +72,36 @@ const Login = ({ onLogin }) => {
           margin="normal"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          sx={{
+            input: { color: '#fff' },
+            label: { color: '#bbb' },
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#555',
+              },
+              '&:hover fieldset': {
+                borderColor: '#888',
+              },
+            },
+          }}
         />
+        {error && (
+          <Typography color="error" variant="body2" mt={2} align="center">
+            {error}
+          </Typography>
+        )}
         <Button
           variant="contained"
           color="primary"
-          fullWidth
-          sx={{ mt: 2 }}
           onClick={handleLogin}
+          fullWidth
+          sx={{
+            marginTop: 3,
+            backgroundColor: '#007bff',
+            '&:hover': {
+              backgroundColor: '#0056b3',
+            },
+          }}
         >
           Login
         </Button>

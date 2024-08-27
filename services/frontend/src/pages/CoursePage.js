@@ -1,30 +1,33 @@
-// src/pages/CoursePage.js
-import React from 'react';
-import { useParams, Outlet, useNavigate } from 'react-router-dom';
-import { Box, Button } from '@mui/material';
+import React, { useState } from 'react';
+import { Outlet, useParams } from 'react-router-dom';
 import Sidebar from '../components/Layout/Sidebar';
-import CourseRoutes from './Routes'; // Import CourseRoutes
+import TopBar from '../components/Layout/TopBar';
 
 const CoursePage = () => {
   const { courseId } = useParams();
-  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const handleBack = () => {
-    navigate('/course-management');
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Sidebar />
-      <Box sx={{ marginLeft: '250px', padding: '16px', width: '100%' }}>
-        <Button variant="contained" onClick={handleBack} sx={{ mb: 2 }}>
-          Back to Course Selection
-        </Button>
-        <h1>Course ID: {courseId}</h1>
-        {/* Render nested routes */}
-        <CourseRoutes />
-      </Box>
-    </Box>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <TopBar toggleSidebar={toggleSidebar} />
+      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      <main
+        style={{
+          flexGrow: 1,
+          marginTop: '64px',
+          marginLeft: isSidebarOpen ? '250px' : '70px', // Adjust based on sidebar state
+          padding: '16px',
+          transition: 'margin-left 0.3s',
+          overflowY: 'auto',
+        }}
+      >
+        <Outlet /> {/* Render the selected route's component here */}
+      </main>
+    </div>
   );
 };
 

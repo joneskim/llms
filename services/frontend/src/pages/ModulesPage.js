@@ -1,109 +1,71 @@
-// src/components/ModulesPage.js
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  TextField,
-  Typography,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import { fetchModulesByCourseId, addModule } from '../services/fakeApi';
+import { useNavigate } from 'react-router-dom';
+import { fetchModulesByCourseId, addModule } from '../services/fakeApi'; // Import functions from fakeApi
 
-const ModulesPage = ({ courseId, onModuleSelect }) => {
+const ModulesPage = ({ courseId }) => {
   const [modules, setModules] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [newModuleName, setNewModuleName] = useState('');
-  const [addingModule, setAddingModule] = useState(false);
+  const navigate = useNavigate();
 
-  // Fetch modules when component mounts
   useEffect(() => {
-    const loadModules = async () => {
-      try {
-        const data = await fetchModulesByCourseId(courseId);
-        setModules(data);
-      } catch (err) {
-        setError('Failed to load modules.');
-      } finally {
-        setLoading(false);
-      }
+    // Fetch modules using the fake API
+    const fetchModules = async () => {
+      const fetchedModules = await fetchModulesByCourseId(courseId);
+      setModules(fetchedModules);
     };
-    loadModules();
+
+    fetchModules();
   }, [courseId]);
 
-  const handleAddModule = async () => {
-    if (!newModuleName.trim()) {
-      return;
-    }
-
-    setAddingModule(true);
-    try {
+  const handleCreateModule = async () => {
+    if (newModuleName) {
       const newModule = await addModule(courseId, newModuleName);
-      setModules([...modules, newModule]);
-      setNewModuleName('');
-    } catch (err) {
-      setError('Failed to add new module.');
-    } finally {
-      setAddingModule(false);
+      if (newModule) {
+        setModules([...modules, newModule]);
+        setNewModuleName(''); // Reset input field
+      }
     }
   };
 
-  if (loading) {
-    return (
-      <Box textAlign="center" mt={2}>
-        <CircularProgress />
-        <Typography mt={2}>Loading modules...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box mt={2}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
-  }
+  const handleOpenModule = (module) => {
+    navigate(`/course/${courseId}/modules/${module.module_id}`, { state: { module } });
+  };
+  
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Modules
-      </Typography>
+    <div>
+      <h2>Modules</h2>
 
-      <List>
-        {modules.map((module) => (
-          <ListItem button key={module.module_id} onClick={() => onModuleSelect(module)}>
-            <ListItemText primary={module.module_name} />
-          </ListItem>
-        ))}
-      </List>
+      <div>
+        {modules.length > 0 ? (
+          <ul>
+            {modules.map((module) => (
+              <li key={module.module_id}>
+                <span
+                  onClick={() => handleOpenModule(module)}
+                  style={{ cursor: 'pointer', textDecoration: 'underline', color: 'blue' }}
+                >
+                  {module.module_name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No modules available.</p>
+        )}
+      </div>
 
-      <Box mt={4}>
-        <Typography variant="h6" gutterBottom>
-          Add New Module
-        </Typography>
-        <TextField
-          label="Module Name"
+      <div style={{ marginTop: '20px' }}>
+        <h3>Create a New Module</h3>
+        <input
+          type="text"
+          placeholder="Enter module name"
           value={newModuleName}
           onChange={(e) => setNewModuleName(e.target.value)}
-          fullWidth
         />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleAddModule}
-          disabled={addingModule}
-          sx={{ mt: 2 }}
-        >
-          {addingModule ? 'Adding...' : 'Add Module'}
-        </Button>
-      </Box>
-    </Box>
+        <button onClick={handleCreateModule}>Create Module</button>
+      </div>
+    </div>
   );
 };
 
