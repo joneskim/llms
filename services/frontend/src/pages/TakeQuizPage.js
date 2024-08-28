@@ -3,34 +3,31 @@ import {
   Container,
   Typography,
   Box,
-  Paper,
   Button,
-  Radio,
+  Paper,
   RadioGroup,
   FormControlLabel,
-  FormControl,
-  FormLabel,
+  Radio,
+  TextField,
   CircularProgress,
   Alert,
+  Divider,
 } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import { fetchQuizzesByModuleId } from '../services/fakeApi';
+import { useParams } from 'react-router-dom';
+import { fetchQuizById } from '../services/fakeApi';
 
 const TakeQuizPage = () => {
-  const { moduleId, quizId } = useParams(); // Extract moduleId and quizId from the route
+  const { quizId } = useParams(); // Fetch the quizId from the route parameters
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [userAnswers, setUserAnswers] = useState({});
-  const navigate = useNavigate();
+  const [answers, setAnswers] = useState({}); // State to track user answers
 
   useEffect(() => {
     const loadQuiz = async () => {
       try {
-        // Fetch quizzes for the module and find the specific quiz by quizId
-        const quizzes = await fetchQuizzesByModuleId(moduleId);
-        const selectedQuiz = quizzes.find((quiz) => quiz.id === Number(quizId));
-        setQuiz(selectedQuiz);
+        const fetchedQuiz = await fetchQuizById(quizId);
+        setQuiz(fetchedQuiz);
       } catch (err) {
         setError('Failed to load quiz.');
       } finally {
@@ -39,17 +36,21 @@ const TakeQuizPage = () => {
     };
 
     loadQuiz();
-  }, [moduleId, quizId]);
+  }, [quizId]);
 
-  const handleAnswerChange = (questionId, selectedOption) => {
-    setUserAnswers({ ...userAnswers, [questionId]: selectedOption });
+  // Handle answer change for multiple choice and text answer questions
+  const handleAnswerChange = (questionId, value) => {
+    setAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      [questionId]: value,
+    }));
   };
 
-  const handleSubmitQuiz = () => {
-    // Logic for submitting quiz answers; you can implement grading here
-    console.log('User Answers:', userAnswers);
-    alert('Quiz submitted!'); // Feedback to user
-    navigate(-1); // Navigate back to the previous page
+  // Submit the quiz and handle logic (e.g., scoring, feedback)
+  const handleSubmit = () => {
+    // Logic for submitting answers goes here
+    console.log('Submitted answers:', answers);
+    alert('Quiz submitted successfully!');
   };
 
   if (loading) {
@@ -68,60 +69,57 @@ const TakeQuizPage = () => {
     );
   }
 
-  if (!quiz) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Typography variant="h5">Quiz not found.</Typography>
-      </Box>
-    );
-  }
-
   return (
-    <Container maxWidth="md" sx={{ marginTop: '2rem', padding: '2rem', borderRadius: '8px', backgroundColor: '#f7f9fc' }}>
-      <Typography variant="h4" color="#2a2a3b" fontWeight="bold" gutterBottom>
+    <Container maxWidth="md" sx={{ marginTop: '2rem' }}>
+      <Typography variant="h4" fontWeight="bold" color="#2a2a3b" gutterBottom>
         {quiz.quiz_name}
       </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        {quiz.description || 'No description available for this quiz.'}
+      <Typography variant="body1" color="textSecondary" mb={3}>
+        {quiz.description}
       </Typography>
 
       {quiz.questions.map((question, index) => (
-        <Paper key={question.id} sx={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#fff' }}>
+        <Paper key={question.id} elevation={2} sx={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <Typography variant="h6" gutterBottom>
             Question {index + 1}: {question.question_text}
           </Typography>
-          <FormControl component="fieldset">
-            <FormLabel component="legend">Select your answer:</FormLabel>
+          <Divider sx={{ marginBottom: '1rem' }} />
+
+          {question.question_type === 'multipleChoice' && question.options ? (
             <RadioGroup
-              aria-label={`question-${question.id}`}
-              name={`question-${question.id}`}
-              value={userAnswers[question.id] || ''}
+              value={answers[question.id] || ''}
               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
             >
-              {question.options.map((option, optIndex) => (
+              {question.options.map((option) => (
                 <FormControlLabel
-                  key={optIndex}
-                  value={option.text}
+                  key={option.id}
+                  value={option.answer_text}
                   control={<Radio />}
-                  label={option.text}
+                  label={option.answer_text}
                 />
               ))}
             </RadioGroup>
-          </FormControl>
+          ) : (
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              variant="outlined"
+              placeholder="Type your answer here..."
+              value={answers[question.id] || ''}
+              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+              sx={{ marginTop: '1rem', backgroundColor: '#f7f7f7' }}
+            />
+          )}
         </Paper>
       ))}
 
       <Button
         variant="contained"
         color="primary"
-        onClick={handleSubmitQuiz}
-        sx={{
-          backgroundColor: '#2a2a3b',
-          color: 'white',
-          marginTop: '2rem',
-          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-        }}
+        onClick={handleSubmit}
         fullWidth
+        sx={{ marginTop: '2rem', padding: '1rem' }}
       >
         Submit Quiz
       </Button>

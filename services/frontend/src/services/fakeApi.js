@@ -206,31 +206,85 @@ const fetchQuizzesByModuleId = async (moduleId) => {
 //     console.error('Error adding quiz:', error);
 //   }
 // };
-const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = []) => {
-  const db = await initDB();
-  const tx = db.transaction('quizzes', 'readwrite');
-  const quizzesStore = tx.objectStore('quizzes');
-  const newQuiz = {
-    quiz_name: quizTitle,
-    description: quizDescription, // Store the description
-    module_id: moduleId,
-  };
-  const quizId = await quizzesStore.add(newQuiz);
-  await tx.done;
+// const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = []) => {
+//   const db = await initDB();
+//   const tx = db.transaction('quizzes', 'readwrite');
+//   const quizzesStore = tx.objectStore('quizzes');
+//   const newQuiz = {
+//     quiz_name: quizTitle,
+//     description: quizDescription, // Store the description
+//     module_id: moduleId,
+//   };
+//   const quizId = await quizzesStore.add(newQuiz);
+//   await tx.done;
 
-  await addQuestionsToQuiz(quizId, questions);
+//   await addQuestionsToQuiz(quizId, questions);
 
-  console.log('Quiz successfully added:', { ...newQuiz, id: quizId });
-  return { ...newQuiz, id: quizId };
-};
+//   console.log('Quiz successfully added:', { ...newQuiz, id: quizId });
+//   return { ...newQuiz, id: quizId };
+// };
 
 
+
+// // Function to add questions and answers to a quiz
+// const addQuestionsToQuiz = async (quizId, questions) => {
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction('questions', 'readwrite');
+//     const questionsStore = tx.objectStore('questions');
+
+//     for (const question of questions) {
+//       const questionData = {
+//         question_text: question.text,
+//         quiz_id: quizId,
+//         question_type: question.type,
+//       };
+//       const questionId = await questionsStore.add(questionData);
+
+//       // Add answers associated with each question
+//       await addAnswersToQuestion(questionId, question.options);
+//     }
+
+//     await tx.done;
+//     console.log('Questions successfully added.');
+//   } catch (error) {
+//     console.error('Error adding questions:', error);
+//   }
+// };
+
+// // Function to add answers to a question
+// const addAnswersToQuestion = async (questionId, options) => {
+//   if (!Array.isArray(options)) {
+//     console.error('Options is not iterable:', options);
+//     return;
+//   }
+
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction('answers', 'readwrite');
+//     const store = tx.objectStore('answers');
+
+//     for (const option of options) {
+//       const newAnswer = {
+//         answer_text: option.text,
+//         correct: option.correct ? 1 : 0,
+//         question_id: questionId,
+//       };
+//       await store.add(newAnswer);
+//     }
+
+//     await tx.done;
+//     console.log('Answers successfully added.');
+//   } catch (error) {
+//     console.error('Error adding answers:', error);
+//   }
+// };
 
 // Function to add questions and answers to a quiz
-const addQuestionsToQuiz = async (quizId, questions) => {
+const addQuestionsToQuiz = async (quizId, questions, db) => {
   try {
-    const db = await initDB();
-    const tx = db.transaction('questions', 'readwrite');
+    // Use the provided transaction from the parent function, ensuring it remains open
+    const tx = db.transaction(['questions', 'answers'], 'readwrite');
     const questionsStore = tx.objectStore('questions');
 
     for (const question of questions) {
@@ -242,10 +296,10 @@ const addQuestionsToQuiz = async (quizId, questions) => {
       const questionId = await questionsStore.add(questionData);
 
       // Add answers associated with each question
-      await addAnswersToQuestion(questionId, question.options);
+      await addAnswersToQuestion(questionId, question.options, tx);
     }
 
-    await tx.done;
+    await tx.done; // Await tx.done at the end after all operations are complete
     console.log('Questions successfully added.');
   } catch (error) {
     console.error('Error adding questions:', error);
@@ -253,15 +307,13 @@ const addQuestionsToQuiz = async (quizId, questions) => {
 };
 
 // Function to add answers to a question
-const addAnswersToQuestion = async (questionId, options) => {
+const addAnswersToQuestion = async (questionId, options, tx) => {
   if (!Array.isArray(options)) {
     console.error('Options is not iterable:', options);
     return;
   }
 
   try {
-    const db = await initDB();
-    const tx = db.transaction('answers', 'readwrite');
     const store = tx.objectStore('answers');
 
     for (const option of options) {
@@ -273,12 +325,39 @@ const addAnswersToQuestion = async (questionId, options) => {
       await store.add(newAnswer);
     }
 
-    await tx.done;
     console.log('Answers successfully added.');
   } catch (error) {
     console.error('Error adding answers:', error);
   }
 };
+
+// Updated function to add a quiz to a module
+const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = []) => {
+  const db = await initDB();
+  const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readwrite'); // Transaction for all related stores
+  const quizzesStore = tx.objectStore('quizzes');
+  
+  try {
+    const newQuiz = {
+      quiz_name: quizTitle,
+      description: quizDescription,
+      module_id: moduleId,
+    };
+    const quizId = await quizzesStore.add(newQuiz);
+
+    // Add questions and answers to the quiz within the same transaction
+    await addQuestionsToQuiz(quizId, questions, db);
+
+    await tx.done; // Await tx.done after all operations are complete
+    console.log('Quiz successfully added:', { ...newQuiz, id: quizId });
+    return { ...newQuiz, id: quizId };
+  } catch (error) {
+    console.error('Error adding quiz:', error);
+    await tx.abort(); // Abort transaction if there's an error
+    throw error; // Rethrow the error to be handled by calling function
+  }
+};
+
 
 // Example implementation of validateTeacherLogin
 const validateTeacherLogin = async (username, password) => {
@@ -407,6 +486,68 @@ const fetchModuleById = async (moduleId) => {
   }
 }
 
+// Updated function to fetch a quiz by its ID along with its questions and options
+// const fetchQuizById = async (quizId) => {
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readonly');
+//     const quizzesStore = tx.objectStore('quizzes');
+//     const quiz = await quizzesStore.get(Number(quizId));
+
+//     if (!quiz) throw new Error('Quiz not found');
+
+//     // Fetch questions associated with the quiz
+//     const questionsStore = tx.objectStore('questions');
+//     const allQuestions = await questionsStore.getAll();
+//     quiz.questions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
+
+//     // Fetch answers associated with each question
+//     const answersStore = tx.objectStore('answers');
+//     const allAnswers = await answersStore.getAll();
+
+//     // Attach options (answers) to each question
+//     quiz.questions = quiz.questions.map((question) => {
+//       question.options = allAnswers.filter((answer) => answer.question_id === question.id);
+//       return question;
+//     });
+
+//     console.log('Fetched quiz:', quiz);
+
+//     await tx.done;
+//     return quiz;
+//   } catch (error) {
+//     console.error('Error fetching quiz:', error);
+//     throw error;
+//   }
+// };
+
+
+const fetchQuizById = async (quizId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readonly');
+    const quizzesStore = tx.objectStore('quizzes');
+    const quiz = await quizzesStore.get(Number(quizId));
+    if (!quiz) throw new Error('Quiz not found');
+
+    // Fetch questions associated with the quiz
+    const questionsStore = tx.objectStore('questions');
+    const allQuestions = await questionsStore.getAll();
+    quiz.questions = allQuestions.filter(q => q.quiz_id === Number(quizId));
+
+    // Fetch options for each question
+    const answersStore = tx.objectStore('answers');
+    for (const question of quiz.questions) {
+      question.options = await answersStore.getAll();
+      question.options = question.options.filter(option => option.question_id === question.id);
+    }
+
+    return quiz;
+  } catch (error) {
+    console.error('Error fetching quiz:', error);
+    throw error;
+  }
+};
 
 
 
@@ -421,4 +562,5 @@ export {
   addModule,
   addQuizToModule,
   fetchModuleById,
+  fetchQuizById
 };

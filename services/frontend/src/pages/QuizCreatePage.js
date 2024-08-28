@@ -101,6 +101,7 @@ const QuizCreatePage = () => {
         return {
           text: q.text,
           textAnswer: q.textAnswer,
+          type: q.type,
           options: optionsArray.map((option, index) => ({
             text: option,
             correct: q.correctIndex === index,
@@ -124,9 +125,11 @@ const QuizCreatePage = () => {
       });
   
       try {
-        const added = await addQuizToModule(module.id, quizTitle, quizDescription, formattedQuestions); // Pass quizDescription
+        const added = await addQuizToModule(module.id, quizTitle, quizDescription, formattedQuestions);
         console.log('Quiz added:', added);
-        alert(`Quiz "${quizTitle}" created for ${module.module_name}`);
+        // alert(`Quiz "${quizTitle}" created for ${module.module_name}`);
+        console.log('Questions being submitted:', formattedQuestions);
+
         
         navigate(`/course/${usedCourseId}/modules/${module.id}`, {
           state: { module: { ...module }, course_id: usedCourseId },

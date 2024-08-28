@@ -1,3 +1,5 @@
+// ModulePage.js
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
@@ -17,10 +19,7 @@ import {
   TextField,
   InputAdornment,
   Pagination,
-  List,
-  ListItem,
-  ListItemText
-  
+  List, ListItem, ListItemText,
 } from '@mui/material';
 import QuizIcon from '@mui/icons-material/Quiz';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -103,14 +102,11 @@ const ModulePage = () => {
     });
   };
 
+  // Add this function to handle quiz navigation
   const handleTakeQuiz = (quiz) => {
     navigate(`/course/${usedCourseId}/modules/${usedModuleId}/take-quiz/${quiz.id}`, {
-      state: { quiz, module },
+      state: { quiz },
     });
-  };
-
-  const handleViewPerformance = () => {
-    // Logic to handle viewing performance overview of quizzes for this module
   };
 
   return (
@@ -169,20 +165,18 @@ const ModulePage = () => {
           </TableHead>
           <TableBody>
             {currentQuizzes.map((quiz) => (
-              <TableRow key={quiz.id} hover onClick={() => handleTakeQuiz(quiz)} sx={{ cursor: 'pointer' }}>
+              <TableRow key={quiz.id}>
                 <TableCell
                   component="th"
                   scope="row"
-                  sx={{ color: '#2a2a3b' }}
+                  sx={{ cursor: 'pointer', color: '#2a2a3b' }}
+                  onClick={() => handleTakeQuiz(quiz)} // Navigate to TakeQuizPage
                 >
                   {quiz.quiz_name}
                 </TableCell>
                 <TableCell align="right">
                   <Tooltip title="Edit Quiz" placement="top">
-                    <IconButton onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering the row click
-                      handleEditQuiz(quiz);
-                    }} sx={{ color: '#1abc9c' }}>
+                    <IconButton onClick={() => handleEditQuiz(quiz)} sx={{ color: '#1abc9c' }}>
                       <EditIcon />
                     </IconButton>
                   </Tooltip>
@@ -242,22 +236,6 @@ const ModulePage = () => {
           )}
         </List>
       </Paper>
-
-      <Button
-        variant="contained"
-        startIcon={<QuizIcon />}
-        onClick={handleViewPerformance}
-        sx={{
-          backgroundColor: '#2a2a3b',
-          color: 'white',
-          marginTop: '2rem',
-          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-        }}
-        fullWidth
-        size="large"
-      >
-        View Quiz Performance
-      </Button>
     </Container>
   );
 };
