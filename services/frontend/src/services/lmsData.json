@@ -13,103 +13,24 @@
             {
               "module_id": 201,
               "module_name": "Module 1: Basics of Motion",
+              "module_description": "An introduction to the basics of motion.",
               "assignments": [],
-              "quizzes": []
+              "quizzes": [],
+              "materials": []
             },
             {
               "module_id": 202,
               "module_name": "Module 2: Forces and Energy",
+              "module_description": "Exploring the concepts of forces and energy.",
               "assignments": [],
-              "quizzes": []
+              "quizzes": [],
+              "materials": []
             }
           ],
           "students": [
             {
               "student_id": 301,
               "name": "Student One",
-              "progress": []
-            }
-          ]
-        },
-        {
-          "course_id": 102,
-          "course_name": "Mathematics 101",
-          "modules": [
-            {
-              "module_id": 203,
-              "module_name": "Module 1: Algebra Basics",
-              "assignments": [],
-              "quizzes": []
-            },
-            {
-              "module_id": 204,
-              "module_name": "Module 2: Calculus Introduction",
-              "assignments": [],
-              "quizzes": []
-            }
-          ],
-          "students": [
-            {
-              "student_id": 302,
-              "name": "Student Two",
-              "progress": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "teacher_id": 2,
-      "username": "teacher2",
-      "password": "password2",
-      "name": "Jane Smith",
-      "courses": [
-        {
-          "course_id": 103,
-          "course_name": "Chemistry 101",
-          "modules": [
-            {
-              "module_id": 205,
-              "module_name": "Module 1: Introduction to Chemistry",
-              "assignments": [],
-              "quizzes": []
-            },
-            {
-              "module_id": 206,
-              "module_name": "Module 2: Chemical Reactions",
-              "assignments": [],
-              "quizzes": []
-            }
-          ],
-          "students": [
-            {
-              "student_id": 303,
-              "name": "Student Three",
-              "progress": []
-            }
-          ]
-        },
-        {
-          "course_id": 104,
-          "course_name": "Biology 101",
-          "modules": [
-            {
-              "module_id": 207,
-              "module_name": "Module 1: Cell Biology",
-              "assignments": [],
-              "quizzes": []
-            },
-            {
-              "module_id": 208,
-              "module_name": "Module 2: Genetics",
-              "assignments": [],
-              "quizzes": []
-            }
-          ],
-          "students": [
-            {
-              "student_id": 304,
-              "name": "Student Four",
               "progress": []
             }
           ]
@@ -121,30 +42,6 @@
     {
       "student_id": 301,
       "name": "Student One",
-      "assignments": [],
-      "quizzes": [],
-      "messages": [],
-      "notifications": []
-    },
-    {
-      "student_id": 302,
-      "name": "Student Two",
-      "assignments": [],
-      "quizzes": [],
-      "messages": [],
-      "notifications": []
-    },
-    {
-      "student_id": 303,
-      "name": "Student Three",
-      "assignments": [],
-      "quizzes": [],
-      "messages": [],
-      "notifications": []
-    },
-    {
-      "student_id": 304,
-      "name": "Student Four",
       "assignments": [],
       "quizzes": [],
       "messages": [],

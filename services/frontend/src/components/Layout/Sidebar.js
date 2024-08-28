@@ -1,5 +1,5 @@
 import React from 'react';
-import { List, ListItem, ListItemIcon, ListItemText, Divider, Paper, IconButton } from '@mui/material';
+import { List, ListItem, ListItemIcon, ListItemText, Divider, Paper } from '@mui/material';
 import { Link } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -8,8 +8,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import GradeIcon from '@mui/icons-material/Grade';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PersonIcon from '@mui/icons-material/Person';
-import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (

@@ -2,7 +2,6 @@ import React from 'react';
 import { AppBar, Toolbar, IconButton, Typography, Box, Badge, Avatar, Menu, MenuItem } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useState } from 'react';
 
 const TopBar = ({ toggleSidebar }) => {

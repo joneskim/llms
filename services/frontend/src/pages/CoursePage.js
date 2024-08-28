@@ -4,7 +4,6 @@ import Sidebar from '../components/Layout/Sidebar';
 import TopBar from '../components/Layout/TopBar';
 
 const CoursePage = () => {
-  const { courseId } = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {

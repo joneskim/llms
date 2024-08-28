@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Card, CardContent, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Paper, Grid, CardContent, CircularProgress, Alert } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { fetchCoursesByTeacherId, fetchModulesByCourseId, fetchStudentsByCourseId } from '../services/fakeApi';
 
