@@ -1,100 +1,75 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
+  Container,
   Box,
   Typography,
   Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Paper,
-  Grid,
+  IconButton,
+  Tooltip,
+  TextField,
+  InputAdornment,
+  Pagination,
   List,
   ListItem,
-  ListItemText,
+  ListItemText
+  
 } from '@mui/material';
 import QuizIcon from '@mui/icons-material/Quiz';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import AddLinkIcon from '@mui/icons-material/AddLink';
-import AssessmentIcon from '@mui/icons-material/Assessment';
+import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
 import { fetchModulesByCourseId, fetchQuizzesByModuleId, fetchAssignmentsByModuleId } from '../services/fakeApi';
 
 const ModulePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { courseId, moduleId } = useParams();
-  const [module, setModule] = useState(location.state?.module);
+  const [module, setModule] = useState(location.state?.module || {});
+  const usedModuleId = moduleId || module.id;
+  const usedCourseId = courseId || module.course_id;
 
   const [quizzes, setQuizzes] = useState([]);
-  const [materials, setMaterials] = useState([]);
   const [performance, setPerformance] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [quizzesPerPage] = useState(5);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadModuleData = async () => {
-      console.log('Course ID:', courseId);
-      console.log('Module ID:', moduleId);
-      console.log('Module from state:', module);
-  
-      if (!module) {
-        const modules = await fetchModulesByCourseId(courseId);
-        const foundModule = modules.find((mod) => mod.module_id === Number(moduleId));
-        console.log('Fetched Modules:', modules);
-        console.log('Found Module:', foundModule);
+      if (!module.id) {
+        const modules = await fetchModulesByCourseId(usedCourseId);
+        const foundModule = modules.find((mod) => mod.id === Number(usedModuleId));
         setModule(foundModule);
       }
     };
-  
-    loadModuleData();
-  }, [courseId, moduleId, module]);
-  
 
+    loadModuleData();
+  }, [usedCourseId, usedModuleId, module]);
 
   useEffect(() => {
-    if (module) {
+    if (module.id) {
       const loadData = async () => {
-        const quizzesData = await fetchQuizzesByModuleId(module.course_id, moduleId);
+        const quizzesData = await fetchQuizzesByModuleId(module.id);
         setQuizzes(quizzesData);
 
-        const assignments = await fetchAssignmentsByModuleId(module.course_id, moduleId);
+        const assignments = await fetchAssignmentsByModuleId(module.id);
         setPerformance(calculatePerformance(assignments, quizzesData));
       };
 
       loadData();
     }
-  }, [module, moduleId]);
-
-  if (!module) {
-    return (
-      <Box sx={{ padding: '2rem', textAlign: 'center' }}>
-        <Typography variant="h4" color="error">
-          Module Not Found
-        </Typography>
-        <Typography variant="body1">
-          It seems like the module information is missing or incorrect.
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          sx={{ mt: 2 }}
-        >
-          Go Back
-        </Button>
-      </Box>
-    );
-  }
-
-  const handleCreateQuiz = () => {
-    navigate(`/course/${courseId}/modules/${moduleId}/create-quiz`, { state: { module, courseId } });
-  };
-
-  const handleAddMaterial = () => {
-    // Logic to handle adding materials (links or files)
-  };
-
-  const handleViewPerformance = () => {
-    // Logic to handle viewing performance overview of quizzes for this module
-  };
+  }, [module]);
 
   const calculatePerformance = (assignments, quizzes) => {
-    const totalScores = [...assignments, ...quizzes].map(item => item.score || 0);
+    const totalScores = [...assignments, ...quizzes].map((item) => item.score || 0);
     const overallAverage = totalScores.length ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length) : 0;
     const highestScore = Math.max(...totalScores);
     const lowestScore = Math.min(...totalScores);
@@ -106,109 +81,148 @@ const ModulePage = () => {
     };
   };
 
+  const indexOfLastQuiz = currentPage * quizzesPerPage;
+  const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
+  const currentQuizzes = quizzes
+    .filter((quiz) => quiz.quiz_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .slice(indexOfFirstQuiz, indexOfLastQuiz);
+
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
+  const handleEditQuiz = (quiz) => {
+    navigate(`/course/${usedCourseId}/modules/${usedModuleId}/edit-quiz/${quiz.id}`, {
+      state: { quiz },
+    });
+  };
+
+  const handleCreateQuiz = () => {
+    navigate(`/course/${usedCourseId}/modules/${usedModuleId}/create-quiz`, {
+      state: { module, courseId: usedCourseId },
+    });
+  };
+
+  const handleTakeQuiz = (quiz) => {
+    navigate(`/course/${usedCourseId}/modules/${usedModuleId}/take-quiz/${quiz.id}`, {
+      state: { quiz, module },
+    });
+  };
+
+  const handleViewPerformance = () => {
+    // Logic to handle viewing performance overview of quizzes for this module
+  };
+
   return (
-    <Box sx={{ padding: '2rem', backgroundColor: '#f7f9fc', borderRadius: '8px' }}>
-      <Grid container justifyContent="space-between" alignItems="center" mb={3}>
-        <Grid item>
-          <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
-            {module.module_name}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Button
-            variant="contained"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
-            sx={{ backgroundColor: '#2a2a3b', color: 'white' }}
-          >
-            Back to Course
-          </Button>
-        </Grid>
-      </Grid>
+    <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem', borderRadius: '8px', backgroundColor: '#f7f9fc' }}>
+      <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={3}>
+        Quizzes for {module.module_name}
+      </Typography>
 
-      <Paper elevation={0} sx={{ padding: '1rem', marginBottom: '2rem' }}>
-        <Typography variant="h6" color="#2a2a3b" gutterBottom>
-          Module Overview
-        </Typography>
-        <Typography variant="body1" color="#2a2a3b">
-          {module.module_description || 'No description provided for this module.'}
-        </Typography>
-      </Paper>
+      <Box mb={3}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search quizzes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ backgroundColor: 'white', borderRadius: '4px' }}
+        />
+      </Box>
 
-      <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ padding: '1rem', backgroundColor: '#fff' }}>
-            <Typography variant="h6" color="#2a2a3b" gutterBottom>
-              Quizzes
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<QuizIcon />}
-              onClick={handleCreateQuiz}
-              sx={{ backgroundColor: '#2a2a3b', color: 'white', mb: 2 }}
-              fullWidth
-            >
-              Create Quiz for this Module
-            </Button>
-            <List>
-              {quizzes.length > 0 ? (
-                quizzes.map(quiz => (
-                  <ListItem key={quiz.quiz_id}>
-                    <ListItemText
-                      primary={quiz.quiz_title}
-                      secondary={`Average Score: ${quiz.average_score || 'N/A'}`}
-                    />
-                  </ListItem>
-                ))
-              ) : (
-                <Typography variant="body1" color="#2a2a3b">No quizzes available.</Typography>
-              )}
-            </List>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={0} sx={{ padding: '1rem', backgroundColor: '#fff' }}>
-            <Typography variant="h6" color="#2a2a3b" gutterBottom>
-              Materials
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddLinkIcon />}
-              onClick={handleAddMaterial}
-              sx={{ backgroundColor: '#2a2a3b', color: 'white', mb: 2 }}
-              fullWidth
-            >
-              Add Materials (Links/Files)
-            </Button>
-            <List>
-              {materials.length > 0 ? (
-                materials.map(material => (
-                  <ListItem button component="a" href={material.material_url} target="_blank" key={material.material_id}>
-                    <ListItemText primary={material.material_name} />
-                  </ListItem>
-                ))
-              ) : (
-                <Typography variant="body1" color="#2a2a3b">No materials available.</Typography>
-              )}
-            </List>
-          </Paper>
-        </Grid>
-      </Grid>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#2a2a3b', borderRadius: '8px' }}>
+              <TableCell
+                sx={{
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem',
+                  borderBottom: 'none',
+                  padding: '16px',
+                }}
+              >
+                Quiz Title
+              </TableCell>
+              <TableCell
+                align="right"
+                sx={{
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem',
+                  borderBottom: 'none',
+                  padding: '16px',
+                }}
+              >
+                Actions
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {currentQuizzes.map((quiz) => (
+              <TableRow key={quiz.id} hover onClick={() => handleTakeQuiz(quiz)} sx={{ cursor: 'pointer' }}>
+                <TableCell
+                  component="th"
+                  scope="row"
+                  sx={{ color: '#2a2a3b' }}
+                >
+                  {quiz.quiz_name}
+                </TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Edit Quiz" placement="top">
+                    <IconButton onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering the row click
+                      handleEditQuiz(quiz);
+                    }} sx={{ color: '#1abc9c' }}>
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Pagination
+        count={Math.ceil(quizzes.length / quizzesPerPage)}
+        page={currentPage}
+        onChange={handlePageChange}
+        color="primary"
+        sx={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}
+      />
+
+      <Button
+        variant="contained"
+        startIcon={<QuizIcon />}
+        onClick={handleCreateQuiz}
+        sx={{
+          backgroundColor: '#2a2a3b',
+          color: 'white',
+          marginTop: '2rem',
+          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+        }}
+        fullWidth
+        size="large"
+      >
+        Create Quiz for this Module
+      </Button>
+
+      <Typography variant="h5" color="#2a2a3b" fontWeight="bold" mt={5} mb={2}>
+        Performance Overview
+      </Typography>
 
       <Paper elevation={0} sx={{ padding: '1rem', backgroundColor: '#fff' }}>
-        <Typography variant="h6" color="#2a2a3b" gutterBottom>
-          Performance Overview
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AssessmentIcon />}
-          onClick={handleViewPerformance}
-          sx={{ backgroundColor: '#2a2a3b', color: 'white' }}
-          fullWidth
-        >
-          View Quiz Performance
-        </Button>
-        <List sx={{ mt: 2 }}>
+        <List>
           {performance ? (
             <>
               <ListItem>
@@ -222,11 +236,29 @@ const ModulePage = () => {
               </ListItem>
             </>
           ) : (
-            <Typography variant="body1" color="#2a2a3b">No performance data available.</Typography>
+            <Typography variant="body1" color="#2a2a3b">
+              No performance data available.
+            </Typography>
           )}
         </List>
       </Paper>
-    </Box>
+
+      <Button
+        variant="contained"
+        startIcon={<QuizIcon />}
+        onClick={handleViewPerformance}
+        sx={{
+          backgroundColor: '#2a2a3b',
+          color: 'white',
+          marginTop: '2rem',
+          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+        }}
+        fullWidth
+        size="large"
+      >
+        View Quiz Performance
+      </Button>
+    </Container>
   );
 };
 

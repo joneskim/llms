@@ -26,7 +26,11 @@ const QuizCreatePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { moduleId, courseId } = useParams(); // Extract courseId and moduleId from URL parameters
-  const module = location.state?.module;
+  const module = location.state?.module || {}; // Default to an empty object to avoid undefined errors
+  const course_Id = location.state?.courseId;
+  const [quizDescription, setQuizDescription] = useState(''); // Add this line
+
+  console.log('Module from state:', module);
 
   const [quizTitle, setQuizTitle] = useState('');
   const [questions, setQuestions] = useState([
@@ -90,46 +94,53 @@ const QuizCreatePage = () => {
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (module && quizTitle) {
-      const formattedQuestions = questions.map((q) => ({
-        text: q.text,
-        textAnswer: q.textAnswer,
-        options: q.options.map((option, index) => ({
-          text: option,
-          correct: q.correctIndex === index,
-        })),
-      }));
-
-      // Determine the correct courseId to use
-      const usedCourseId = courseId || module.course_id;
-
+      const formattedQuestions = questions.map((q) => {
+        const optionsArray = Array.isArray(q.options) ? q.options : [];
+        return {
+          text: q.text,
+          textAnswer: q.textAnswer,
+          options: optionsArray.map((option, index) => ({
+            text: option,
+            correct: q.correctIndex === index,
+          })),
+        };
+      });
+  
+      const usedCourseId = courseId || course_Id;
       if (!usedCourseId) {
         console.error('Error: course_id is missing!');
         alert('Course ID is missing. Please ensure the correct module is loaded.');
         return;
       }
-
+  
       console.log('About to add quiz with:', {
         courseId: usedCourseId,
-        moduleId: module.module_id,
+        moduleId: module.id,
         quizTitle,
+        quizDescription, // Include this in the console log
         formattedQuestions,
       });
-
-      addQuizToModule(usedCourseId, module.module_id, quizTitle, formattedQuestions);
-
-      console.log('Quiz added successfully', quizTitle, formattedQuestions);
-      alert(`Quiz "${quizTitle}" created for ${module.module_name}`);
-
-      // Navigate back to module page
-      navigate(`/course/${usedCourseId}/modules/${module.module_id}`, {
-        state: { module, course_id: usedCourseId },
-      });
+  
+      try {
+        const added = await addQuizToModule(module.id, quizTitle, quizDescription, formattedQuestions); // Pass quizDescription
+        console.log('Quiz added:', added);
+        alert(`Quiz "${quizTitle}" created for ${module.module_name}`);
+        
+        navigate(`/course/${usedCourseId}/modules/${module.id}`, {
+          state: { module: { ...module }, course_id: usedCourseId },
+        });
+      } catch (error) {
+        console.error('Error adding quiz:', error);
+        alert('An error occurred while adding the quiz.');
+      }
     } else {
       alert('Please provide a quiz title.');
     }
   };
+  
+  
 
   return (
     <Container maxWidth="md" sx={{ marginTop: '2rem', padding: '2rem' }}>
@@ -145,6 +156,16 @@ const QuizCreatePage = () => {
         onChange={(e) => setQuizTitle(e.target.value)}
         sx={{ marginBottom: '1.5rem', backgroundColor: '#fff', borderRadius: '8px' }}
       />
+
+<TextField
+  fullWidth
+  variant="outlined"
+  label="Quiz Description"
+  value={quizDescription}
+  onChange={(e) => setQuizDescription(e.target.value)}
+  sx={{ marginBottom: '1.5rem', backgroundColor: '#fff', borderRadius: '8px' }}
+/>
+
 
       {questions.map((question, index) => (
         <Paper

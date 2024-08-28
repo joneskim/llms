@@ -17,7 +17,7 @@ const OverviewPage = () => {
         // Assuming you already have the teacherId stored globally or in context
         const teacherId = 1; // Example teacherId, replace with actual logic
         const courses = await fetchCoursesByTeacherId(teacherId);
-        const currentCourse = courses.find(course => course.course_id === parseInt(courseId));
+        const currentCourse = courses.find(course => course.id === parseInt(courseId));
         if (currentCourse) {
           setCourse(currentCourse);
           const loadedModules = await fetchModulesByCourseId(courseId);

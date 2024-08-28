@@ -36,8 +36,10 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
   const handleCourseSelect = (courseId) => {
     onCourseSelect(courseId);
-    navigate(`/course/${courseId}/overview`);
+    console.log('Course selected:', courseId);
+    navigate(`/course/${courseId}/overview`, { state: { courseId } });
   };
+  
 
   const handleLogout = () => {
     localStorage.removeItem('teacher_id');
@@ -100,7 +102,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
       <Grid container spacing={4}>
         {courses.map((course) => (
-          <Grid item xs={12} sm={6} md={4} key={course.course_id}>
+          <Grid item xs={12} sm={6} md={4} key={course.id}>
             <Card
               elevation={6}
               sx={{
@@ -148,7 +150,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                   size="medium"
                   variant="contained"
                   color="primary"
-                  onClick={() => handleCourseSelect(course.course_id)}
+                  onClick={() => handleCourseSelect(course.id)}
                   sx={{
                     backgroundColor: '#1e1e2f',  // Match navbar color
                     borderRadius: '10px',

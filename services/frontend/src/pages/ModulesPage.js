@@ -59,26 +59,26 @@ const ModulesPage = ({ courseId }) => {
   };
 
   const handleOpenModule = (module) => {
-    navigate(`/course/${courseId}/modules/${module.module_id}`, { state: { module, courseId } });
+    navigate(`/course/${courseId}/modules/${module.id}`, { state: { module, courseId } });
   };
 
   const handleEditModule = (module) => {
     setEditModuleName(module.module_name);
-    setEditModuleId(module.module_id);
+    setEditModuleId(module.id);
     setEditDialogOpen(true);
   };
 
   const handleSaveEditModule = () => {
     setModules((prevModules) =>
       prevModules.map((mod) =>
-        mod.module_id === editModuleId ? { ...mod, module_name: editModuleName } : mod
+        mod.id === editModuleId ? { ...mod, module_name: editModuleName } : mod
       )
     );
     setEditDialogOpen(false);
   };
 
   const handleDeleteModule = (moduleId) => {
-    setModules((prevModules) => prevModules.filter((mod) => mod.module_id !== moduleId));
+    setModules((prevModules) => prevModules.filter((mod) => mod.id !== moduleId));
   };
 
   const handlePageChange = (event, value) => {
@@ -148,7 +148,7 @@ const ModulesPage = ({ courseId }) => {
           </TableHead>
           <TableBody>
             {currentModules.map((module) => (
-              <TableRow key={module.module_id}>
+              <TableRow key={module.id}>
                 <TableCell
                   component="th"
                   scope="row"
@@ -164,7 +164,7 @@ const ModulesPage = ({ courseId }) => {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Delete Module" placement="top">
-                    <IconButton onClick={() => handleDeleteModule(module.module_id)} sx={{ color: '#e74c3c' }}>
+                    <IconButton onClick={() => handleDeleteModule(module.id)} sx={{ color: '#e74c3c' }}>
                       <DeleteIcon />
                     </IconButton>
                   </Tooltip>
