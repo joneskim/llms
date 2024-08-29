@@ -116,7 +116,7 @@ const TakeQuizPage = () => {
       const result = await submitQuiz(parseInt(quizId), student.id, answers);
       setSubmissionResult(result);
       setQuizCompleted(true);
-      console.log('Quiz submitted:', result);
+      window.location.reload(); 
     } catch (err) {
       setError('Failed to submit the quiz.');
     }
