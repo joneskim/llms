@@ -170,7 +170,9 @@ const TakeQuizPage = () => {
                     (res) => res.questionId === question.id
                   );
                   const studentAnswer = questionResult?.studentAnswer;
-                  const correctAnswer = questionResult?.correctAnswer;
+                  const correctAnswer = question.options.find(
+                    (option) => option.id === questionResult?.correctAnswer
+                  )?.answer_text;
                   const isCorrect = questionResult?.isCorrect;
 
                   return (
@@ -196,34 +198,13 @@ const TakeQuizPage = () => {
                           >
                             {isCorrect ? 'Correct' : 'Incorrect'}
                           </Typography>
-                          {question.question_type === 'multipleChoice' ? (
-                            <RadioGroup value={studentAnswer || ''} disabled>
-                              {question.options.map((option) => (
-                                <FormControlLabel
-                                  key={option.id}
-                                  value={option.id}
-                                  control={<Radio />}
-                                  label={option.answer_text}
-                                  sx={{
-                                    color:
-                                      option.id === correctAnswer
-                                        ? 'green'
-                                        : studentAnswer === option.id
-                                        ? 'red'
-                                        : 'black',
-                                  }}
-                                />
-                              ))}
-                            </RadioGroup>
-                          ) : (
-                            <>
-                              <Typography>Your Answer: {studentAnswer || 'No Answer'}</Typography>
-                              {!isCorrect && (
-                                <Typography color="green">
-                                  Correct Answer: {correctAnswer}
-                                </Typography>
-                              )}
-                            </>
+                          <Typography>
+                            Your Answer: {studentAnswer ? question.options.find(option => option.id === studentAnswer)?.answer_text || 'No Answer' : 'No Answer'}
+                          </Typography>
+                          {!isCorrect && correctAnswer && (
+                            <Typography color="green">
+                              Correct Answer: {correctAnswer}
+                            </Typography>
                           )}
                         </TableCell>
                       </TableRow>
