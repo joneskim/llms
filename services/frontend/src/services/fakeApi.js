@@ -86,6 +86,15 @@ const initDB = async () => {
   }
 };
 
+const generateUniqueId = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 5; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 
 // Clear existing IndexedDB data to avoid upgrade issues
 const clearDatabase = async () => {
@@ -112,16 +121,17 @@ const seedDatabase = async () => {
     // Seed Users (Teacher + 10 Students)
     const usersStore = tx.objectStore('users');
     await usersStore.put({ id: 1, username: 'teacher1', name: 'John Doe', email: 'johndoe@example.com', role: 'teacher' });
-    await usersStore.put({ id: 2, username: 'student1', name: 'Jane Smith', email: 'janesmith@example.com', role: 'student' });
-    await usersStore.put({ id: 3, username: 'student2', name: 'Mike Johnson', email: 'mikejohnson@example.com', role: 'student' });
-    await usersStore.put({ id: 4, username: 'student3', name: 'Emily Davis', email: 'emilydavis@example.com', role: 'student' });
-    await usersStore.put({ id: 5, username: 'student4', name: 'David Wilson', email: 'davidwilson@example.com', role: 'student' });
-    await usersStore.put({ id: 6, username: 'student5', name: 'Sophia Brown', email: 'sophiabrown@example.com', role: 'student' });
-    await usersStore.put({ id: 7, username: 'student6', name: 'Chris Lee', email: 'chrislee@example.com', role: 'student' });
-    await usersStore.put({ id: 8, username: 'student7', name: 'Olivia Martin', email: 'oliviamartin@example.com', role: 'student' });
-    await usersStore.put({ id: 9, username: 'student8', name: 'James Taylor', email: 'jamestaylor@example.com', role: 'student' });
-    await usersStore.put({ id: 10, username: 'student9', name: 'Linda White', email: 'lindawhite@example.com', role: 'student' });
-    await usersStore.put({ id: 11, username: 'student10', name: 'Ethan Brown', email: 'ethanbrown@example.com', role: 'student' });
+    await usersStore.put({ id: 2, username: 'student1', name: 'Jane Smith', email: 'janesmith@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 3, username: 'student2', name: 'Mike Johnson', email: 'mikejohnson@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 4, username: 'student3', name: 'Emily Davis', email: 'emilydavis@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 5, username: 'student4', name: 'David Wilson', email: 'davidwilson@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 6, username: 'student5', name: 'Sophia Brown', email: 'sophiabrown@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 7, username: 'student6', name: 'Chris Lee', email: 'chrislee@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 8, username: 'student7', name: 'Olivia Martin', email: 'oliviamartin@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 9, username: 'student8', name: 'James Taylor', email: 'jamestaylor@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 10, username: 'student9', name: 'Linda White', email: 'lindawhite@example.com', role: 'student', uniqueId: generateUniqueId() });
+    await usersStore.put({ id: 11, username: 'student10', name: 'Ethan Brown', email: 'ethanbrown@example.com', role: 'student', uniqueId: generateUniqueId() });
+
 
     // Seed Courses
     const coursesStore = tx.objectStore('courses');
@@ -229,9 +239,9 @@ const seedDatabase = async () => {
 // Initialize and seed the database
 // await clearDatabase(); // Clears existing data to ensure stores are created fresh
 // if database is empty, seed it with initial data
-if ((await openDB('lmsDatabase3', 1)).objectStoreNames.length === 0) {
-  await seedDatabase();
-}
+// if ((await openDB('lmsDatabase3', 1)).objectStoreNames.length === 0) {
+//   await seedDatabase();
+// }
 // await seedDatabase(); // Seeds initial data
 
 // Function to fetch quizzes by module ID
@@ -739,7 +749,92 @@ const fetchQuizById = async (quizId) => {
 // };
 
 
-// Function to submit a quiz and grade it, storing detailed results for each question
+// // Function to submit a quiz and grade it, storing detailed results for each question
+// const submitQuiz = async (quizId, studentId, answers) => {
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction(['quizzes', 'questions', 'answers', 'student_quiz_scores'], 'readwrite');
+//     const quizzesStore = tx.objectStore('quizzes');
+//     const questionsStore = tx.objectStore('questions');
+//     const answersStore = tx.objectStore('answers');
+//     const scoresStore = tx.objectStore('student_quiz_scores');
+
+//     // Fetch the quiz
+//     const quiz = await quizzesStore.get(Number(quizId));
+//     if (!quiz) throw new Error('Quiz not found');
+
+//     // Fetch questions associated with the quiz
+//     const allQuestions = await questionsStore.getAll();
+//     const quizQuestions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
+
+//     let totalQuestions = quizQuestions.length;
+//     let correctAnswers = 0;
+//     const questionResults = [];
+
+//     // Grade the quiz
+//     for (const question of quizQuestions) {
+//       const userAnswer = answers[question.id];
+//       const questionAnswers = await answersStore.getAll();
+//       const correctAnswer = questionAnswers.find(
+//         (ans) => ans.question_id === question.id && ans.correct === 1
+//       );
+
+//       let isCorrect = false;
+//       // For multiple choice questions, compare the selected index
+//       if (question.question_type === 'multipleChoice') {
+//         isCorrect = userAnswer !== undefined && correctAnswer && correctAnswer.id === userAnswer;
+//       }
+//       // For text answers, check for exact match
+//       else if (question.question_type === 'textAnswer') {
+//         isCorrect =
+//           userAnswer &&
+//           correctAnswer &&
+//           userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
+//       }
+
+//       if (isCorrect) {
+//         correctAnswers++;
+//       }
+
+//       // Store individual question results
+//       questionResults.push({
+//         questionId: question.id,
+//         questionText: question.question_text,
+//         correctAnswer: correctAnswer?.answer_text,
+//         studentAnswer: userAnswer,
+//         isCorrect,
+//       });
+//     }
+
+//     // Calculate the overall score
+//     const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+//     // Save the overall result and individual question results in the student_quiz_scores table
+//     const result = {
+//       student_id: Number(studentId),
+//       quiz_id: Number(quizId),
+//       score,
+//       submitted_at: new Date().toISOString(),
+//       questionResults,
+//     };
+
+//     await scoresStore.add(result);
+//     await tx.done;
+
+//     // Return the graded result
+//     return {
+//       score,
+//       correctAnswers,
+//       totalQuestions,
+//       questionResults,
+//       message: `You scored ${score}% with ${correctAnswers} out of ${totalQuestions} correct answers.`,
+//     };
+//   } catch (error) {
+//     console.error('Error submitting quiz:', error);
+//     throw error;
+//   }
+// };
+
 const submitQuiz = async (quizId, studentId, answers) => {
   try {
     const db = await initDB();
@@ -763,35 +858,34 @@ const submitQuiz = async (quizId, studentId, answers) => {
 
     // Grade the quiz
     for (const question of quizQuestions) {
-      const userAnswer = answers[question.id];
+      const userAnswer = answers[question.id]; // Fetch the answer based on the question ID
       const questionAnswers = await answersStore.getAll();
       const correctAnswer = questionAnswers.find(
         (ans) => ans.question_id === question.id && ans.correct === 1
       );
 
       let isCorrect = false;
+
       // For multiple choice questions, compare the selected index
       if (question.question_type === 'multipleChoice') {
         isCorrect = userAnswer !== undefined && correctAnswer && correctAnswer.id === userAnswer;
-      }
+      } 
       // For text answers, check for exact match
       else if (question.question_type === 'textAnswer') {
-        isCorrect =
-          userAnswer &&
-          correctAnswer &&
-          userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
+        isCorrect = userAnswer && correctAnswer && userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
       }
 
+      // Increment correct answers count
       if (isCorrect) {
         correctAnswers++;
       }
 
-      // Store individual question results
+      // Save question results, including the student's answer
       questionResults.push({
         questionId: question.id,
         questionText: question.question_text,
         correctAnswer: correctAnswer?.answer_text,
-        studentAnswer: userAnswer,
+        studentAnswer: userAnswer !== undefined ? userAnswer : 'No Answer Provided', // Handle undefined answers
         isCorrect,
       });
     }
@@ -827,6 +921,69 @@ const submitQuiz = async (quizId, studentId, answers) => {
 
 
 
+const fetchStudentQuizResults = async (quizId, studentId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('student_quiz_scores', 'readonly');
+    const scoresStore = tx.objectStore('student_quiz_scores');
+
+    // Fetch all quiz results
+    const allResults = await scoresStore.getAll();
+
+    // Find the specific result for the given quiz and student
+    const studentResult = allResults.find(
+      (result) => result.quiz_id === Number(quizId) && result.student_id === Number(studentId)
+    );
+    console.log('Fetched student quiz results:', studentResult); // Debug: Log fetched student quiz results
+    return studentResult || null; // Return null if not found instead of throwing an error
+  } catch (error) {
+    console.error('Error fetching student quiz results:', error);
+    return null;
+  }
+};
+
+const fetchStudentByName = async (studentName) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('users', 'readonly');
+    const store = tx.objectStore('users');
+    const allStudents = await store.getAll();
+
+    // Find the first student with the matching name
+    const student = allStudents.find((student) => student.name === studentName);
+
+    if (!student) {
+      throw new Error('Student not found.');
+    }
+
+    return student.id; // Return the student's ID instead of the entire object
+  } catch (error) {
+    console.error('Error fetching student by name:', error);
+    throw error; // Re-throw the error to handle it in the calling function
+  }
+};
+
+const fetchStudentByUniqueId = async (uniqueId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('users', 'readonly');
+    const store = tx.objectStore('users');
+    const allStudents = await store.getAll();
+
+    const student = allStudents.find((student) => student.uniqueId === uniqueId);
+
+    if (!student) {
+      throw new Error('Student not found.');
+    }
+
+    return student; // Return the student object
+  } catch (error) {
+    console.error('Error fetching student by unique ID:', error);
+    throw error;
+  }
+};
+
+
 export {
   validateTeacherLogin,
   fetchCoursesByTeacherId,
@@ -840,4 +997,7 @@ export {
   fetchModuleById,
   fetchQuizById,
   submitQuiz,
+  fetchStudentQuizResults,
+  fetchStudentByName,
+  fetchStudentByUniqueId
 };

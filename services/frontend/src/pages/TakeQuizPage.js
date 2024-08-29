@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -18,19 +18,22 @@ import {
   Divider,
   Alert,
 } from '@mui/material';
-import { fetchQuizById, submitQuiz } from '../services/fakeApi'; // Import submitQuiz
+import { fetchQuizById, submitQuiz, fetchStudentQuizResults, fetchStudentByUniqueId } from '../services/fakeApi';
 
 const TakeQuizPage = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [studentId, setStudentId] = useState('');
+  const [uniqueId, setUniqueId] = useState('');
+  const [student, setStudent] = useState(null);
   const [quizStarted, setQuizStarted] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [previousResult, setPreviousResult] = useState(null);
 
   useEffect(() => {
     const loadQuiz = async () => {
@@ -56,6 +59,18 @@ const TakeQuizPage = () => {
     }
   }, [quizStarted]);
 
+  const checkPreviousSubmission = async (id) => {
+    try {
+      const result = await fetchStudentQuizResults(quizId, id);
+      if (result) {
+        setPreviousResult(result);
+        setSubmissionResult(result);
+      }
+    } catch (err) {
+      console.error('Failed to fetch previous submission:', err);
+    }
+  };
+
   const handleOptionChange = (questionId, optionIndex) => {
     setAnswers((prev) => ({
       ...prev,
@@ -70,23 +85,42 @@ const TakeQuizPage = () => {
     }));
   };
 
-  const handleStartQuiz = () => {
-    if (!studentId) {
+  const handleStartQuiz = async () => {
+    if (!uniqueId) {
       setError('Please enter your unique student ID.');
       return;
     }
-    setQuizStarted(true);
-    setError(null);
+
+    try {
+      const fetchedStudent = await fetchStudentByUniqueId(uniqueId);
+      if (!fetchedStudent) {
+        setError('Student not found.');
+        return;
+      }
+      setStudent(fetchedStudent);
+      await checkPreviousSubmission(fetchedStudent.id);
+
+      if (!previousResult) {
+        setQuizStarted(true);
+      }
+      setError(null);
+    } catch (err) {
+      setError('Error retrieving student information.');
+    }
   };
 
   const handleSubmit = async () => {
+    if (!student) {
+      setError('Student information is missing.');
+      return;
+    }
+
     try {
-      const result = await submitQuiz(quizId, studentId, answers);
+      const result = await submitQuiz(parseInt(quizId), parseInt(student.id), answers);
       setSubmissionResult(result);
       setQuizStarted(false);
-      setError(null);
+      console.log('Quiz submitted:', result);
 
-      // Redirect to a results page or prevent redoing the quiz
       navigate(`/quiz-result/${quizId}`, { state: { result } });
     } catch (err) {
       setError('Failed to submit the quiz.');
@@ -119,14 +153,14 @@ const TakeQuizPage = () => {
       {!quizStarted && !submissionResult ? (
         <>
           <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
-            Enter Your Student ID to Start the Quiz
+            Enter Your Unique Student ID to Start the Quiz
           </Typography>
           <TextField
-            label="Student ID"
+            label="Unique Student ID"
             variant="outlined"
             fullWidth
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
+            value={uniqueId}
+            onChange={(e) => setUniqueId(e.target.value)}
             sx={{ marginBottom: 3 }}
           />
           {error && <Alert severity="error" sx={{ marginBottom: 3 }}>{error}</Alert>}
@@ -145,33 +179,41 @@ const TakeQuizPage = () => {
         </>
       ) : (
         <>
+          {submissionResult && (
+            <Alert severity="success" sx={{ mt: 3 }}>
+              {submissionResult.message}
+            </Alert>
+          )}
+          {submissionResult && (
+            <Typography variant="h5" color="#2a2a3b" fontWeight="bold" mt={3} mb={2}>
+              Final Score: {submissionResult.score}%
+            </Typography>
+          )}
           <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
             {quiz?.quiz_name}
           </Typography>
           <Typography variant="body1" color="#2a2a3b" mb={3}>
             {quiz?.description}
           </Typography>
-          <Box mt={2} display="flex" justifyContent="center">
-            <Typography variant="body2" color="#2a2a3b">
-              Time Elapsed: {formatTime(timeElapsed)}
-            </Typography>
-          </Box>
-
-          {submissionResult && (
-            <Alert severity="success" sx={{ mt: 3 }}>
-              {submissionResult.message}
-            </Alert>
+          {quizStarted && (
+            <Box mt={2} display="flex" justifyContent="center">
+              <Typography variant="body2" color="#2a2a3b">
+                Time Elapsed: {formatTime(timeElapsed)}
+              </Typography>
+            </Box>
           )}
 
           <TableContainer component={Paper} sx={{ mt: 3 }}>
             <Table>
               <TableBody>
                 {quiz?.questions.map((question, index) => {
-                  const studentAnswer = answers[question.id];
-                  const correctAnswer = submissionResult?.questionResults.find(
+                  const studentAnswer = previousResult
+                    ? previousResult.questionResults.find((res) => res.questionId === question.id)?.studentAnswer
+                    : answers[question.id];
+                  const correctAnswer = previousResult?.questionResults.find(
                     (res) => res.questionId === question.id
                   )?.correctAnswer;
-                  const isCorrect = submissionResult?.questionResults.find(
+                  const isCorrect = previousResult?.questionResults.find(
                     (res) => res.questionId === question.id
                   )?.isCorrect;
 
@@ -184,39 +226,28 @@ const TakeQuizPage = () => {
                             color: '#ffffff',
                             fontWeight: 'bold',
                             fontSize: '1.1rem',
-                            borderBottom: 'none',
                             padding: '16px',
                           }}
                         >
-                          Question {index + 1}: {question.question_text} -{' '}
-                          {isCorrect ? 'Correct' : 'Incorrect'}
+                          Question {index + 1}: {question.question_text} - {isCorrect ? 'Correct' : 'Incorrect'}
                         </TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2} sx={{ padding: '16px' }}>
                           {question.question_type === 'multipleChoice' ? (
                             <RadioGroup
-                              value={studentAnswer}
-                              onChange={(e) =>
-                                handleOptionChange(question.id, Number(e.target.value))
-                              }
-                              disabled={submissionResult !== null} // Disable after submission
+                              value={studentAnswer || ''}
+                              onChange={(e) => handleOptionChange(question.id, Number(e.target.value))}
+                              disabled={!!submissionResult}
                             >
-                              {question.options.map((option, optIndex) => (
+                              {question.options.map((option) => (
                                 <FormControlLabel
-                                  key={optIndex}
+                                  key={option.id}
                                   value={option.id}
                                   control={<Radio />}
-                                  label={option.answer_text}
+                                  label={`${option.answer_text} ${option.correct ? '(Correct)' : ''}`}
                                   sx={{
-                                    display: 'block',
-                                    marginY: '0.5rem',
-                                    color:
-                                      option.correct && submissionResult
-                                        ? '#4caf50'
-                                        : studentAnswer === option.id && !option.correct && submissionResult
-                                        ? '#f44336'
-                                        : '#000',
+                                    color: option.correct ? '#4caf50' : studentAnswer === option.id ? '#f44336' : '#000',
                                   }}
                                 />
                               ))}
@@ -225,19 +256,11 @@ const TakeQuizPage = () => {
                             <TextField
                               fullWidth
                               variant="outlined"
-                              placeholder="Your answer"
                               value={studentAnswer || ''}
-                              onChange={(e) =>
-                                handleTextAnswerChange(question.id, e.target.value)
-                              }
-                              sx={{ backgroundColor: '#fafafa', borderRadius: '4px' }}
-                              disabled={submissionResult !== null}
-                              error={submissionResult && !isCorrect}
-                              helperText={
-                                submissionResult && !isCorrect
-                                  ? `Correct answer: ${correctAnswer}`
-                                  : ''
-                              }
+                              onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
+                              disabled={!!submissionResult}
+                              error={!isCorrect}
+                              helperText={!isCorrect ? `Correct answer: ${correctAnswer}` : ''}
                             />
                           )}
                         </TableCell>
@@ -254,7 +277,7 @@ const TakeQuizPage = () => {
             </Table>
           </TableContainer>
 
-          {!submissionResult && (
+          {!submissionResult && quizStarted && (
             <Box mt={4} display="flex" justifyContent="center">
               <Button
                 variant="contained"

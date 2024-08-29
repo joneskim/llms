@@ -16,10 +16,10 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { fetchStudentsByCourseId, fetchCoursesByTeacherId, fetchQuizzesByModuleId } from '../services/fakeApi';
+import { fetchStudentByUniqueId, fetchCoursesByTeacherId, fetchQuizzesByModuleId } from '../services/fakeApi';
 
 const StudentQuizAccessPage = () => {
-  const [studentName, setStudentName] = useState('');
+  const [uniqueId, setUniqueId] = useState('');
   const [student, setStudent] = useState(null);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -28,27 +28,18 @@ const StudentQuizAccessPage = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch students and match the entered student name with enrolled students
+  // Fetch student data using unique ID and match with enrolled courses
   const handleStudentLogin = async () => {
     setLoading(true);
     setError(null);
     try {
-      const teacherId = 1; // Example ID, adjust as needed
-      const coursesData = await fetchCoursesByTeacherId(teacherId);
-      let foundStudent = null;
-
-      for (const course of coursesData) {
-        const students = await fetchStudentsByCourseId(course.id);
-        const matchedStudent = students.find((s) => s.name.toLowerCase() === studentName.toLowerCase());
-        if (matchedStudent) {
-          foundStudent = matchedStudent;
-          setCourses(coursesData);
-          break;
-        }
-      }
+      const foundStudent = await fetchStudentByUniqueId(uniqueId);
 
       if (foundStudent) {
         setStudent(foundStudent);
+        const teacherId = 1; // Example teacher ID, adjust as needed
+        const coursesData = await fetchCoursesByTeacherId(teacherId);
+        setCourses(coursesData);
       } else {
         setError('Student not found.');
       }
@@ -59,7 +50,7 @@ const StudentQuizAccessPage = () => {
     }
   };
 
-  // Handle course selection
+  // Handle course selection and fetch quizzes for the selected course
   const handleCourseSelect = async (courseId) => {
     setSelectedCourse(courseId);
     setLoading(true);
@@ -73,9 +64,9 @@ const StudentQuizAccessPage = () => {
     }
   };
 
-  // Handle quiz selection and navigate to quiz page
+  // Handle quiz selection and navigate to quiz page with student data
   const handleQuizSelect = (quiz) => {
-    navigate(`/take-quiz/${quiz.id}`, { state: { quiz } });
+    navigate(`/take-quiz/${quiz.id}`, { state: { quiz, student } });
   };
 
   if (loading) {
@@ -103,10 +94,10 @@ const StudentQuizAccessPage = () => {
         <Box mb={3}>
           <TextField
             fullWidth
-            label="Enter Your Unique ID (First Name)"
+            label="Enter Your Unique Student ID"
             variant="outlined"
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
+            value={uniqueId}
+            onChange={(e) => setUniqueId(e.target.value)}
             sx={{ marginBottom: '1rem', backgroundColor: '#fff' }}
           />
           <Button
