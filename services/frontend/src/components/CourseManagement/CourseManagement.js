@@ -11,35 +11,65 @@ import {
   CardActions,
   Button,
 } from '@mui/material';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { fetchCoursesByTeacherId } from '../../services/fakeApi';
+import { fetchCoursesByTeacherId, fetchModulesByCourseId, fetchQuizzesByModuleId, fetchAssignmentsByModuleId } from '../../services/fakeApi';
 
 const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [error, setError] = useState(null);
+  const [events, setEvents] = useState([]); // Define the events array to hold calendar events
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadCoursesAndEvents = async () => {
       try {
         const data = await fetchCoursesByTeacherId(teacherId);
         setCourses(data);
+
+        const allEvents = [];
+        for (const course of data) {
+          const courseModules = await fetchModulesByCourseId(course.id);
+          for (const module of courseModules) {
+            const moduleQuizzes = await fetchQuizzesByModuleId(module.id);
+            moduleQuizzes.forEach((quiz) => {
+              allEvents.push({
+                title: `Quiz: ${quiz.quiz_name}`,
+                start: quiz.startDate || '2024-09-01', // Replace with actual date
+                end: quiz.dueDate || '2024-09-05', // Replace with actual date
+                color: '#3e95cd',
+              });
+            });
+
+            const moduleAssignments = await fetchAssignmentsByModuleId(course.id, module.id);
+            moduleAssignments.forEach((assignment) => {
+              allEvents.push({
+                title: `Assignment: ${assignment.assignment_name}`,
+                start: assignment.startDate || '2024-09-06', // Replace with actual date
+                end: assignment.dueDate || '2024-09-10', // Replace with actual date
+                color: '#ffa726',
+              });
+            });
+          }
+        }
+        setEvents(allEvents); // Set the events state with all the collected events
       } catch (err) {
         setError('Failed to load courses.');
       } finally {
         setLoadingCourses(false);
       }
     };
-    loadCourses();
+    loadCoursesAndEvents();
   }, [teacherId]);
 
   const handleCourseSelect = (courseId) => {
     onCourseSelect(courseId);
-    console.log('Course selected:', courseId);
     navigate(`/course/${courseId}/overview`, { state: { courseId } });
   };
-  
 
   const handleLogout = () => {
     localStorage.removeItem('teacher_id');
@@ -49,13 +79,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
   if (loadingCourses) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-        sx={{ backgroundColor: '#ffffff', color: '#333' }}  // Full white background with dark text
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress />
         <Typography mt={2}>Loading courses...</Typography>
       </Box>
@@ -64,29 +88,16 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
   if (error) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-        sx={{ backgroundColor: '#ffffff', color: '#333' }}  // Full white background with dark text
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
   return (
-    <Box
-      padding={3}
-      sx={{
-        backgroundColor: '#ffffff',  // Full white background
-        minHeight: '100vh',
-        color: '#333',
-      }}
-    >
+    <Box padding={3} sx={{ backgroundColor: '#ffffff', minHeight: '100vh' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="div" sx={{ fontFamily: 'Roboto, sans-serif', fontWeight: 'bold' }}>
+        <Typography variant="h4" sx={{ fontFamily: 'Roboto, sans-serif', fontWeight: 'bold' }}>
           My Courses
         </Typography>
         <Button
@@ -94,19 +105,19 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
           color="secondary"
           startIcon={<LogoutIcon />}
           onClick={handleLogout}
-          sx={{ color: '#1e1e2f', borderColor: '#1e1e2f' }}  // Button color matches the dark theme
+          sx={{ color: '#1e1e2f', borderColor: '#1e1e2f' }}
         >
           Logout
         </Button>
       </Box>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={4} mb={4}>
         {courses.map((course) => (
           <Grid item xs={12} sm={6} md={4} key={course.id}>
             <Card
               elevation={6}
               sx={{
-                backgroundColor: '#ffffff',  // White background for the card
+                backgroundColor: '#ffffff',
                 borderRadius: '20px',
                 overflow: 'hidden',
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
@@ -117,32 +128,14 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                 },
               }}
             >
-              <Box
-                sx={{
-                  backgroundColor: '#1e1e2f',  // Match navbar color for the top part
-                  padding: '20px 16px',
-                  textAlign: 'center',
-                  color: '#ffffff',  // White text for contrast
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  component="div"
-                  sx={{ fontFamily: 'Poppins, sans-serif', fontWeight: '600', marginTop: '10px' }}
-                >
+              <Box sx={{ backgroundColor: '#1e1e2f', padding: '20px 16px', textAlign: 'center', color: '#ffffff' }}>
+                <Typography variant="h6" sx={{ fontFamily: 'Poppins, sans-serif', fontWeight: '600', marginTop: '10px' }}>
                   {course.course_name}
                 </Typography>
               </Box>
               <CardContent sx={{ textAlign: 'center', padding: '24px 16px' }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontFamily: 'Roboto, sans-serif',
-                    color: '#333',  // Dark text for readability
-                    marginTop: '8px',
-                  }}
-                >
-                  {course.course_description || 'No description available'}
+                <Typography variant="body2" sx={{ fontFamily: 'Roboto, sans-serif', color: '#333', marginTop: '8px' }}>
+                  {course.description || 'No description available'}
                 </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: 'center', paddingBottom: 3 }}>
@@ -152,7 +145,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                   color="primary"
                   onClick={() => handleCourseSelect(course.id)}
                   sx={{
-                    backgroundColor: '#1e1e2f',  // Match navbar color
+                    backgroundColor: '#1e1e2f',
                     borderRadius: '10px',
                     padding: '10px 28px',
                     textTransform: 'none',
@@ -170,6 +163,38 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
           </Grid>
         ))}
       </Grid>
+
+      <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2a2a3b', marginBottom: '1.5rem' }}>
+        Upcoming Events
+      </Typography>
+      <Box
+        sx={{
+          backgroundColor: '#f7f9fc',
+          borderRadius: '8px',
+          padding: '1rem',
+          boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #ddd',
+        }}
+      >
+        <FullCalendar
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          events={events} // Use the events state here
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay',
+          }}
+          height="auto"
+          contentHeight="auto"
+          eventDisplay="block"
+          eventColor="#3e95cd"
+          dayMaxEvents={true}
+          eventBackgroundColor="#f3f4f6"
+          eventBorderColor="#ddd"
+          eventTextColor="#333"
+        />
+      </Box>
     </Box>
   );
 };

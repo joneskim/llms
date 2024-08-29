@@ -12,7 +12,7 @@ import ModulePage from './pages/ModulePage';
 import QuizCreatePage from './pages/QuizCreatePage';
 import { CssBaseline } from '@mui/material';
 import TopBar from './components/Layout/TopBar';
-import TakeQuizPage from './pages/TakeQuizPage';
+import TakeQuizPage from './pages/TakeQuizPage'; // Page for taking a quiz without login
 
 const App = () => {
   const [teacherId, setTeacherId] = useState(null);
@@ -68,13 +68,13 @@ const App = () => {
               <Route path="modules/:moduleId" element={<ModulePage />} />
               <Route path="modules/:moduleId/create-quiz" element={<QuizCreatePage />} />
               <Route path="modules/:moduleId/edit-quiz/:quizId" element={<QuizCreatePage />} />
-              <Route path="modules/:moduleId/take-quiz/:quizId" element={<TakeQuizPage />} />
               <Route path="*" element={<Navigate to="overview" replace />} /> {/* Catch-all to overview */}
             </Route>
             <Route path="*" element={<Navigate to="/course-management" replace />} />
           </>
         ) : (
           <>
+            <Route path="/take-quiz/:quizId" element={<TakeQuizPage />} />
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </>

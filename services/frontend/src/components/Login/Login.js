@@ -8,16 +8,25 @@ const Login = ({ onLogin }) => {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    setError(''); // Clear any previous error
     try {
-      const result = await validateTeacherLogin(username, password);
-      if (result) {
-        onLogin(result.teacher_id); // Pass teacher_id to parent
+      const user = await validateTeacherLogin(username, password);
+
+      if (user) {
+        const teacherId = Number(user.id);
+        if (!isNaN(teacherId)) {
+          onLogin(teacherId);
+          localStorage.setItem('teacher_id', teacherId);
+          console.log(`Logged in as ${user.name}, ID: ${teacherId}`);
+        } else {
+          console.error('Failed to parse teacher ID as a number');
+          setError('Unexpected error: Invalid user ID.');
+        }
       } else {
-        setError('Invalid username or password');
+        setError('Login failed: User not found or incorrect role.');
       }
     } catch (err) {
-      setError(err.message || 'An error occurred. Please try again.');
+      console.error('Error during login:', err);
+      setError('An error occurred during login. Please try again.');
     }
   };
 
@@ -28,38 +37,70 @@ const Login = ({ onLogin }) => {
       alignItems="center"
       justifyContent="center"
       minHeight="100vh"
-      padding={2}
-      sx={{ backgroundColor: '#1e1e2f' }}
+      padding={0}
+      sx={{ backgroundColor: '#f7f9fc',
+        
+       }}
     >
       <Paper
-        elevation={6}
+        elevation={3}
         sx={{
-          padding: 4,
-          maxWidth: 400,
-          width: '100%',
-          backgroundColor: '#2a2a3b',
-          color: '#fff',
+          width: '30%',
+          borderRadius: 0,
+          backgroundColor: '#ffffff',
+          boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          borderRadius: 5,
         }}
       >
-        <Typography variant="h4" gutterBottom align="center">
-          Login
-        </Typography>
+        <Box
+          sx={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#2a2a3b',
+            textAlign: 'center',
+            marginBottom: '0.5rem',
+            borderBottom: '1px solid #ccc',
+            borderTopLeftRadius: 15,
+            borderTopRightRadius: 15
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              color: '#ffffff',
+              fontFamily: 'Poppins, sans-serif',
+              fontWeight: '600',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Teacher Login
+          </Typography>
+        </Box>
         <TextField
           label="Username"
           variant="outlined"
           fullWidth
-          margin="normal"
+          margin="dense"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           sx={{
-            input: { color: '#fff' },
-            label: { color: '#bbb' },
+            width: '70%',
+            // center
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            input: { color: '#2a2a3b' },
+            label: { color: '#555' },
             '& .MuiOutlinedInput-root': {
               '& fieldset': {
-                borderColor: '#555',
+                borderColor: '#ccc',
               },
               '&:hover fieldset': {
                 borderColor: '#888',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#2a2a3b',
               },
             },
           }}
@@ -69,37 +110,53 @@ const Login = ({ onLogin }) => {
           type="password"
           variant="outlined"
           fullWidth
-          margin="normal"
+          margin="dense"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           sx={{
-            input: { color: '#fff' },
-            label: { color: '#bbb' },
+            width: '70%',
+            // center
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            input: { color: '#2a2a3b' },
+            label: { color: '#555' },
             '& .MuiOutlinedInput-root': {
               '& fieldset': {
-                borderColor: '#555',
+                borderColor: '#ccc',
               },
               '&:hover fieldset': {
                 borderColor: '#888',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#2a2a3b',
               },
             },
           }}
         />
         {error && (
-          <Typography color="error" variant="body2" mt={2} align="center">
+          <Typography color="error" variant="body2" mt={1} align="center">
             {error}
           </Typography>
         )}
         <Button
           variant="contained"
-          color="primary"
           onClick={handleLogin}
           fullWidth
           sx={{
-            marginTop: 3,
-            backgroundColor: '#007bff',
+            width: '70%',
+            // center
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            marginTop: '1rem',
+            marginBottom: '1rem',
+            backgroundColor: '#2a2a3b',
+            color: '#ffffff',
+            borderRadius: 10,
+            fontFamily: 'Poppins, sans-serif',
+            fontWeight: '500',
+            padding: '10px 0',
             '&:hover': {
-              backgroundColor: '#0056b3',
+              backgroundColor: '#1e1e2f',
             },
           }}
         >

@@ -1,36 +1,40 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Container,
   Typography,
-  Box,
-  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
   Paper,
   RadioGroup,
   FormControlLabel,
   Radio,
   TextField,
-  CircularProgress,
-  Alert,
+  Button,
+  Box,
   Divider,
 } from '@mui/material';
-import { useParams } from 'react-router-dom';
 import { fetchQuizById } from '../services/fakeApi';
 
 const TakeQuizPage = () => {
-  const { quizId } = useParams(); // Fetch the quizId from the route parameters
+  const { quizId } = useParams();
   const [quiz, setQuiz] = useState(null);
+  const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [answers, setAnswers] = useState({}); // State to track user answers
+  const [error, setError] = useState(null);
+  const [timeElapsed, setTimeElapsed] = useState(0); // Timer state
 
   useEffect(() => {
     const loadQuiz = async () => {
       try {
         const fetchedQuiz = await fetchQuizById(quizId);
         setQuiz(fetchedQuiz);
+        setLoading(false);
       } catch (err) {
-        setError('Failed to load quiz.');
-      } finally {
+        setError('Failed to load the quiz');
         setLoading(false);
       }
     };
@@ -38,91 +42,146 @@ const TakeQuizPage = () => {
     loadQuiz();
   }, [quizId]);
 
-  // Handle answer change for multiple choice and text answer questions
-  const handleAnswerChange = (questionId, value) => {
-    setAnswers((prevAnswers) => ({
-      ...prevAnswers,
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeElapsed((prevTime) => prevTime + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleOptionChange = (questionId, optionIndex) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: optionIndex,
+    }));
+  };
+
+  const handleTextAnswerChange = (questionId, value) => {
+    setAnswers((prev) => ({
+      ...prev,
       [questionId]: value,
     }));
   };
 
-  // Submit the quiz and handle logic (e.g., scoring, feedback)
   const handleSubmit = () => {
-    // Logic for submitting answers goes here
-    console.log('Submitted answers:', answers);
-    alert('Quiz submitted successfully!');
+    console.log('Submitted Answers:', answers);
+    // Handle submission to backend
+  };
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
-      </Box>
-    );
+    return <Typography>Loading...</Typography>;
   }
 
   if (error) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
+    return <Typography color="error">{error}</Typography>;
   }
 
   return (
-    <Container maxWidth="md" sx={{ marginTop: '2rem' }}>
-      <Typography variant="h4" fontWeight="bold" color="#2a2a3b" gutterBottom>
-        {quiz.quiz_name}
+    <Container
+      maxWidth="lg"
+      sx={{
+        marginTop: '2rem',
+        padding: '2rem',
+        borderRadius: '8px'
+      }}
+    >
+      <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
+        {quiz?.quiz_name}
       </Typography>
-      <Typography variant="body1" color="textSecondary" mb={3}>
-        {quiz.description}
+      <Typography variant="body1" color="#2a2a3b" mb={3}>
+        {quiz?.description}
       </Typography>
+      <Box mt={2} display="flex" justifyContent="center">
+        <Typography variant="body2" color="#2a2a3b">
+          Time Elapsed: {formatTime(timeElapsed)}
+        </Typography>
+      </Box>
 
-      {quiz.questions.map((question, index) => (
-        <Paper key={question.id} elevation={2} sx={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <Typography variant="h6" gutterBottom>
-            Question {index + 1}: {question.question_text}
-          </Typography>
-          <Divider sx={{ marginBottom: '1rem' }} />
+      <TableContainer component={Paper}>
+        <Table>
+          <TableBody>
+            {quiz?.questions.map((question, index) => (
+              <React.Fragment key={question.id}>
+                <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
+                  <TableCell
+                    colSpan={2}
+                    sx={{
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      fontSize: '1.1rem',
+                      borderBottom: 'none',
+                      padding: '16px',
+                    }}
+                  >
+                    Question {index + 1}: {question.question_text}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={2} sx={{ padding: '16px' }}>
+                    {question.question_type === 'multipleChoice' ? (
+                      <RadioGroup
+                        value={answers[question.id] ?? ''}
+                        onChange={(e) =>
+                          handleOptionChange(question.id, Number(e.target.value))
+                        }
+                      >
+                        {question.options.map((option, optIndex) => (
+                          <FormControlLabel
+                            key={optIndex}
+                            value={optIndex}
+                            control={<Radio />}
+                            label={option.answer_text}
+                            sx={{ display: 'block', marginY: '0.5rem' }}
+                          />
+                        ))}
+                      </RadioGroup>
+                    ) : (
+                      <TextField
+                        fullWidth
+                        variant="outlined"
+                        placeholder="Your answer"
+                        value={answers[question.id] || ''}
+                        onChange={(e) =>
+                          handleTextAnswerChange(question.id, e.target.value)
+                        }
+                        sx={{ backgroundColor: '#fafafa', borderRadius: '4px' }}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Divider />
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-          {question.question_type === 'multipleChoice' && question.options ? (
-            <RadioGroup
-              value={answers[question.id] || ''}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-            >
-              {question.options.map((option) => (
-                <FormControlLabel
-                  key={option.id}
-                  value={option.answer_text}
-                  control={<Radio />}
-                  label={option.answer_text}
-                />
-              ))}
-            </RadioGroup>
-          ) : (
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              variant="outlined"
-              placeholder="Type your answer here..."
-              value={answers[question.id] || ''}
-              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-              sx={{ marginTop: '1rem', backgroundColor: '#f7f7f7' }}
-            />
-          )}
-        </Paper>
-      ))}
+      <Box mt={4} display="flex" justifyContent="center">
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          sx={{
+            backgroundColor: '#34495e',
+            color: 'white',
+            padding: '10px 20px',
+            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          Submit Quiz
+        </Button>
+      </Box>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleSubmit}
-        fullWidth
-        sx={{ marginTop: '2rem', padding: '1rem' }}
-      >
-        Submit Quiz
-      </Button>
+      
     </Container>
   );
 };

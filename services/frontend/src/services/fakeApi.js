@@ -3,7 +3,7 @@ import { openDB } from 'idb';
 // Initialize IndexedDB database and create object stores
 const initDB = async () => {
   try {
-    const db = await openDB('lmsDatabase1', 1, {
+    const db = await openDB('lmsDatabase3', 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('users')) {
           db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
@@ -57,116 +57,138 @@ const clearDatabase = async () => {
   }
 };
 
-// Seed initial data into the database
 const seedDatabase = async () => {
   try {
     const db = await initDB();
     const tx = db.transaction(
-      ['users', 'courses', 'modules', 'assignments', 'quizzes'],
+      ['users', 'courses', 'modules', 'assignments', 'quizzes', 'questions', 'answers', 'students_courses'],
       'readwrite'
     );
 
-    // Seed Users
+    // Seed Users (Teacher + 10 Students)
     const usersStore = tx.objectStore('users');
-    await usersStore.put({
-      id: 1,
-      username: 'teacher1',
-      name: 'John Doe',
-      email: 'johndoe@example.com',
-      role: 'teacher',
-    });
-    await usersStore.put({
-      id: 2,
-      username: 'student1',
-      name: 'Jane Smith',
-      email: 'janesmith@example.com',
-      role: 'student',
-    });
-    await usersStore.put({
-      id: 3,
-      username: 'student2',
-      name: 'Mike Johnson',
-      email: 'mikejohnson@example.com',
-      role: 'student',
-    });
+    await usersStore.put({ id: 1, username: 'teacher1', name: 'John Doe', email: 'johndoe@example.com', role: 'teacher' });
+    await usersStore.put({ id: 2, username: 'student1', name: 'Jane Smith', email: 'janesmith@example.com', role: 'student' });
+    await usersStore.put({ id: 3, username: 'student2', name: 'Mike Johnson', email: 'mikejohnson@example.com', role: 'student' });
+    await usersStore.put({ id: 4, username: 'student3', name: 'Emily Davis', email: 'emilydavis@example.com', role: 'student' });
+    await usersStore.put({ id: 5, username: 'student4', name: 'David Wilson', email: 'davidwilson@example.com', role: 'student' });
+    await usersStore.put({ id: 6, username: 'student5', name: 'Sophia Brown', email: 'sophiabrown@example.com', role: 'student' });
+    await usersStore.put({ id: 7, username: 'student6', name: 'Chris Lee', email: 'chrislee@example.com', role: 'student' });
+    await usersStore.put({ id: 8, username: 'student7', name: 'Olivia Martin', email: 'oliviamartin@example.com', role: 'student' });
+    await usersStore.put({ id: 9, username: 'student8', name: 'James Taylor', email: 'jamestaylor@example.com', role: 'student' });
+    await usersStore.put({ id: 10, username: 'student9', name: 'Linda White', email: 'lindawhite@example.com', role: 'student' });
+    await usersStore.put({ id: 11, username: 'student10', name: 'Ethan Brown', email: 'ethanbrown@example.com', role: 'student' });
 
     // Seed Courses
     const coursesStore = tx.objectStore('courses');
-    await coursesStore.put({
-      id: 1,
-      course_name: 'Physics 101',
-      description: 'Introduction to basic physics concepts',
-      teacher_id: 1,
-    });
-    await coursesStore.put({
-      id: 2,
-      course_name: 'Mathematics 101',
-      description: 'Introduction to basic mathematics concepts',
-      teacher_id: 1,
-    });
+    await coursesStore.put({ id: 1, course_name: 'Physics 101', description: 'Introduction to basic physics concepts', teacher_id: 1 });
+    await coursesStore.put({ id: 2, course_name: 'Mathematics 101', description: 'Introduction to basic mathematics concepts', teacher_id: 1 });
+    await coursesStore.put({ id: 3, course_name: 'Chemistry 101', description: 'Introduction to basic chemistry concepts', teacher_id: 1 });
+    await coursesStore.put({ id: 4, course_name: 'Biology 101', description: 'Introduction to basic biology concepts', teacher_id: 1 });
+    await coursesStore.put({ id: 5, course_name: 'Computer Science 101', description: 'Introduction to basic programming concepts', teacher_id: 1 });
 
     // Seed Modules
     const modulesStore = tx.objectStore('modules');
-    await modulesStore.put({
-      id: 1,
-      module_name: 'Module 1: Basics of Motion',
-      description: 'An introduction to the basics of motion',
-      course_id: 1,
-    });
-    await modulesStore.put({
-      id: 2,
-      module_name: 'Module 2: Energy and Work',
-      description: 'Understanding energy and work',
-      course_id: 1,
-    });
-    await modulesStore.put({
-      id: 3,
-      module_name: 'Module 1: Algebra Fundamentals',
-      description: 'Basic algebraic principles',
-      course_id: 2,
-    });
+    await modulesStore.put({ id: 1, module_name: 'Module 1: Basics of Motion', description: 'An introduction to the basics of motion', course_id: 1 });
+    await modulesStore.put({ id: 2, module_name: 'Module 2: Energy and Work', description: 'Understanding energy and work', course_id: 1 });
+    await modulesStore.put({ id: 3, module_name: 'Module 1: Algebra Fundamentals', description: 'Basic algebraic principles', course_id: 2 });
+    await modulesStore.put({ id: 4, module_name: 'Module 2: Calculus Basics', description: 'Introduction to differentiation and integration', course_id: 2 });
+    await modulesStore.put({ id: 5, module_name: 'Module 1: Atomic Structure', description: 'Learn about atoms and molecules', course_id: 3 });
+    await modulesStore.put({ id: 6, module_name: 'Module 1: Cell Biology', description: 'The basics of cell structure and function', course_id: 4 });
+    await modulesStore.put({ id: 7, module_name: 'Module 1: Introduction to Programming', description: 'Introduction to basic programming concepts', course_id: 5 });
+    await modulesStore.put({ id: 8, module_name: 'Module 2: Advanced Programming', description: 'Deeper dive into algorithms and data structures', course_id: 5 });
 
     // Seed Assignments
     const assignmentsStore = tx.objectStore('assignments');
-    await assignmentsStore.put({
-      id: 1,
-      assignment_name: 'Assignment 1',
-      module_id: 1,
-      assignment_type: 'homework',
-      grading_criteria: 'accuracy',
-    });
+    await assignmentsStore.put({ id: 1, assignment_name: 'Assignment 1', module_id: 1, assignment_type: 'homework', grading_criteria: 'accuracy' });
 
-    // Seed Quizzes
+    // Seed Quizzes with Questions and Answers
     const quizzesStore = tx.objectStore('quizzes');
-    await quizzesStore.put({
-      id: 1,
-      quiz_name: 'Quiz 1',
-      description: 'Test your knowledge on basic motion',
-      module_id: 1,
-    });
-    await quizzesStore.put({
-      id: 2,
-      quiz_name: 'Quiz 2',
-      description: 'Test your knowledge on energy and work',
-      module_id: 2,
-    });
-    await quizzesStore.put({
-      id: 3,
-      quiz_name: 'Quiz 1',
-      description: 'Test your knowledge on algebra fundamentals',
-      module_id: 3,
-    });
+    await quizzesStore.put({ id: 1, quiz_name: 'Quiz 1', description: 'Test your knowledge on basic motion', module_id: 1 });
+    await quizzesStore.put({ id: 2, quiz_name: 'Quiz 2', description: 'Test your knowledge on energy and work', module_id: 2 });
+    await quizzesStore.put({ id: 3, quiz_name: 'Quiz 1', description: 'Test your knowledge on algebra fundamentals', module_id: 3 });
+    await quizzesStore.put({ id: 4, quiz_name: 'Basic Calculus Quiz', description: 'Test your calculus knowledge', module_id: 4 });
+    await quizzesStore.put({ id: 5, quiz_name: 'Atomic Structure Quiz', description: 'Test your knowledge on atomic structures', module_id: 5 });
+    await quizzesStore.put({ id: 6, quiz_name: 'Cell Biology Quiz', description: 'Test your knowledge on cell biology', module_id: 6 });
+    await quizzesStore.put({ id: 7, quiz_name: 'Intro Programming Quiz', description: 'Test your basic programming knowledge', module_id: 7 });
+    await quizzesStore.put({ id: 8, quiz_name: 'Advanced Programming Quiz', description: 'Test your advanced programming skills', module_id: 8 });
+
+    // Seed Questions and Answers for Quizzes
+    const questionsStore = tx.objectStore('questions');
+    const answersStore = tx.objectStore('answers');
+
+    // Add questions and answers for Quiz 1
+    const question1Id = await questionsStore.add({ id: 1, question_text: 'What is the formula for velocity?', quiz_id: 1, question_type: 'multipleChoice' });
+    await answersStore.put({ id: 1, answer_text: 'v = d/t', correct: 1, question_id: question1Id });
+    await answersStore.put({ id: 2, answer_text: 'v = m*a', correct: 0, question_id: question1Id });
+    await answersStore.put({ id: 3, answer_text: 'v = f/d', correct: 0, question_id: question1Id });
+
+    const question2Id = await questionsStore.add({ id: 2, question_text: 'What is kinetic energy?', quiz_id: 2, question_type: 'multipleChoice' });
+    await answersStore.put({ id: 4, answer_text: 'Energy of motion', correct: 1, question_id: question2Id });
+    await answersStore.put({ id: 5, answer_text: 'Energy of position', correct: 0, question_id: question2Id });
+    await answersStore.put({ id: 6, answer_text: 'Energy of heat', correct: 0, question_id: question2Id });
+
+    const question3Id = await questionsStore.add({ id: 3, question_text: 'Solve x^2 - 4 = 0.', quiz_id: 3, question_type: 'textAnswer' });
+    await answersStore.put({ id: 7, answer_text: 'x = ±2', correct: 1, question_id: question3Id });
+
+    const question4Id = await questionsStore.add({ id: 4, question_text: 'What is the derivative of x^2?', quiz_id: 4, question_type: 'multipleChoice' });
+    await answersStore.put({ id: 8, answer_text: '2x', correct: 1, question_id: question4Id });
+    await answersStore.put({ id: 9, answer_text: 'x', correct: 0, question_id: question4Id });
+
+    const question5Id = await questionsStore.add({ id: 5, question_text: 'What particles are in the nucleus?', quiz_id: 5, question_type: 'multipleChoice' });
+    await answersStore.put({ id: 10, answer_text: 'Protons and Neutrons', correct: 1, question_id: question5Id });
+    await answersStore.put({ id: 11, answer_text: 'Electrons', correct: 0, question_id: question5Id });
+
+    const question6Id = await questionsStore.add({ id: 6, question_text: 'Name the powerhouse of the cell.', quiz_id: 6, question_type: 'textAnswer' });
+    await answersStore.put({ id: 12, answer_text: 'Mitochondria', correct: 1, question_id: question6Id });
+
+    const question7Id = await questionsStore.add({ id: 7, question_text: 'What is a variable?', quiz_id: 7, question_type: 'multipleChoice' });
+    await answersStore.put({ id: 13, answer_text: 'A placeholder for data', correct: 1, question_id: question7Id });
+    await answersStore.put({ id: 14, answer_text: 'A constant value', correct: 0, question_id: question7Id });
+
+    const question8Id = await questionsStore.add({ id: 8, question_text: 'Which sorting algorithm is the fastest?', quiz_id: 8, question_type: 'multipleChoice' });
+    await answersStore.put({ id: 15, answer_text: 'Quick Sort', correct: 1, question_id: question8Id });
+    await answersStore.put({ id: 16, answer_text: 'Bubble Sort', correct: 0, question_id: question8Id });
+
+    // Seed Student Enrollments with more coverage
+    const studentsCoursesStore = tx.objectStore('students_courses');
+    await studentsCoursesStore.put({ id: 1, student_id: 2, course_id: 1 });
+    await studentsCoursesStore.put({ id: 2, student_id: 3, course_id: 1 });
+    await studentsCoursesStore.put({ id: 3, student_id: 4, course_id: 1 });
+    await studentsCoursesStore.put({ id: 4, student_id: 5, course_id: 1 });
+    await studentsCoursesStore.put({ id: 5, student_id: 6, course_id: 1 });
+    await studentsCoursesStore.put({ id: 6, student_id: 7, course_id: 2 });
+    await studentsCoursesStore.put({ id: 7, student_id: 8, course_id: 2 });
+    await studentsCoursesStore.put({ id: 8, student_id: 9, course_id: 2 });
+    await studentsCoursesStore.put({ id: 9, student_id: 10, course_id: 2 });
+    await studentsCoursesStore.put({ id: 10, student_id: 11, course_id: 2 });
+    await studentsCoursesStore.put({ id: 11, student_id: 2, course_id: 3 });
+    await studentsCoursesStore.put({ id: 12, student_id: 3, course_id: 3 });
+    await studentsCoursesStore.put({ id: 13, student_id: 4, course_id: 3 });
+    await studentsCoursesStore.put({ id: 14, student_id: 5, course_id: 3 });
+    await studentsCoursesStore.put({ id: 15, student_id: 6, course_id: 4 });
+    await studentsCoursesStore.put({ id: 16, student_id: 7, course_id: 4 });
+    await studentsCoursesStore.put({ id: 17, student_id: 8, course_id: 4 });
+    await studentsCoursesStore.put({ id: 18, student_id: 9, course_id: 5 });
+    await studentsCoursesStore.put({ id: 19, student_id: 10, course_id: 5 });
+    await studentsCoursesStore.put({ id: 20, student_id: 11, course_id: 5 });
 
     await tx.done;
-    console.log('Database seeded with initial data.');
+    console.log('Database seeded with more detailed data.');
   } catch (error) {
     console.error('Error seeding database:', error);
   }
 };
 
+
+
 // Initialize and seed the database
-await clearDatabase(); // Clears existing data to ensure stores are created fresh
-await seedDatabase(); // Seeds initial data
+// await clearDatabase(); // Clears existing data to ensure stores are created fresh
+// if database is empty, seed it with initial data
+if ((await openDB('lmsDatabase3', 1)).objectStoreNames.length === 0) {
+  await seedDatabase();
+}
+// await seedDatabase(); // Seeds initial data
 
 // Function to fetch quizzes by module ID
 const fetchQuizzesByModuleId = async (moduleId) => {
@@ -360,7 +382,32 @@ const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions =
 
 
 // Example implementation of validateTeacherLogin
-const validateTeacherLogin = async (username, password) => {
+// const validateTeacherLogin = async (username, password) => {
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction('users', 'readonly');
+//     const store = tx.objectStore('users');
+//     const allUsers = await store.getAll();
+
+//     // Find the user with the matching username and role
+//     const user = allUsers.find(
+//       (user) => user.username === username && user.role === 'teacher'
+//     );
+
+//     // Validate password
+//     if (user && user.password === password) {
+//       return user; // Return the user if the username, role, and password match
+//     } else {
+//       console.warn('Invalid credentials provided');
+//       return null; // Return null if credentials don't match
+//     }
+//   } catch (error) {
+//     console.error('Error validating teacher login:', error);
+//     return null;
+//   }
+// };
+
+const validateTeacherLogin = async (username) => {
   try {
     const db = await initDB();
     const tx = db.transaction('users', 'readonly');
@@ -369,6 +416,7 @@ const validateTeacherLogin = async (username, password) => {
     const user = allUsers.find(
       (user) => user.username === username && user.role === 'teacher'
     );
+
     return user ? user : null;
   } catch (error) {
     console.error('Error validating teacher login:', error);
@@ -423,19 +471,29 @@ const fetchStudentsByCourseId = async (courseId) => {
     const tx = db.transaction('students_courses', 'readonly');
     const store = tx.objectStore('students_courses');
     const allEnrollments = await store.getAll();
+    
+    console.log('Enrollments:', allEnrollments); // Debugging: Log enrollments data
+    
+    // Filter enrollments to find students for the specified course
     const studentIds = allEnrollments
       .filter((enrollment) => enrollment.course_id === courseId)
       .map((enrollment) => enrollment.student_id);
+    
+    console.log('Student IDs:', studentIds); // Debugging: Log student IDs
+
     const studentsStore = db.transaction('users', 'readonly').objectStore('users');
     const students = await Promise.all(
       studentIds.map(async (studentId) => await studentsStore.get(studentId))
     );
+
+    console.log('Fetched Students:', students); // Debugging: Log fetched students
     return students;
   } catch (error) {
     console.error('Error fetching students by course ID:', error);
     return [];
   }
-}
+};
+
 
 const addCourse = async (courseName, description, teacherId) => {
   try {
@@ -548,6 +606,7 @@ const fetchQuizById = async (quizId) => {
     throw error;
   }
 };
+
 
 
 
