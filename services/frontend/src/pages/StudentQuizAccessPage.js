@@ -1,3 +1,4 @@
+// StudentQuizAccessPage.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -84,6 +85,7 @@ const StudentQuizAccessPage = () => {
         marginTop: '2rem',
         padding: '2rem',
         borderRadius: '8px',
+        backgroundColor: '#f8f9fa',
       }}
     >
       <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>

@@ -1,3 +1,4 @@
+// TakeQuizPage.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -18,28 +19,36 @@ import {
   Divider,
   Alert,
 } from '@mui/material';
-import { fetchQuizById, submitQuiz, fetchStudentQuizResults, fetchStudentByUniqueId } from '../services/fakeApi';
+import { fetchQuizById, submitQuiz, fetchStudentQuizResults } from '../services/fakeApi';
 
 const TakeQuizPage = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { student } = location.state || {}; // Ensure this is passed from the previous page
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeElapsed, setTimeElapsed] = useState(0);
-  const [uniqueId, setUniqueId] = useState('');
-  const [student, setStudent] = useState(null);
-  const [quizStarted, setQuizStarted] = useState(false);
+  const [initialCountdown, setInitialCountdown] = useState(5);
+  const [quizCountdown, setQuizCountdown] = useState(300); // Example: 5 minutes timer
   const [submissionResult, setSubmissionResult] = useState(null);
   const [previousResult, setPreviousResult] = useState(null);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+
+  // Redirect if not accessed from the correct path
+  useEffect(() => {
+    if (!student) {
+      navigate('/'); // Redirect to home or a relevant page if student info is missing
+    }
+  }, [student, navigate]);
 
   useEffect(() => {
     const loadQuiz = async () => {
       try {
         const fetchedQuiz = await fetchQuizById(quizId);
         setQuiz(fetchedQuiz);
+        await checkPreviousSubmission(student.id);
         setLoading(false);
       } catch (err) {
         setError('Failed to load the quiz');
@@ -48,16 +57,27 @@ const TakeQuizPage = () => {
     };
 
     loadQuiz();
-  }, [quizId]);
+  }, [quizId, student.id]);
 
   useEffect(() => {
-    if (quizStarted) {
-      const timer = setInterval(() => {
-        setTimeElapsed((prevTime) => prevTime + 1);
+    if (!quizCompleted && initialCountdown > 0) {
+      const countdownTimer = setInterval(() => {
+        setInitialCountdown((prev) => prev - 1);
       }, 1000);
-      return () => clearInterval(timer);
+      return () => clearInterval(countdownTimer);
     }
-  }, [quizStarted]);
+  }, [initialCountdown, quizCompleted]);
+
+  useEffect(() => {
+    if (initialCountdown === 0 && !quizCompleted && quizCountdown > 0) {
+      const quizTimer = setInterval(() => {
+        setQuizCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(quizTimer);
+    } else if (quizCountdown === 0 && !quizCompleted) {
+      handleSubmit(); // Automatically submit when quiz countdown reaches zero
+    }
+  }, [quizCountdown, initialCountdown, quizCompleted]);
 
   const checkPreviousSubmission = async (id) => {
     try {
@@ -65,6 +85,7 @@ const TakeQuizPage = () => {
       if (result) {
         setPreviousResult(result);
         setSubmissionResult(result);
+        setQuizCompleted(true); // Mark the quiz as completed
       }
     } catch (err) {
       console.error('Failed to fetch previous submission:', err);
@@ -85,30 +106,6 @@ const TakeQuizPage = () => {
     }));
   };
 
-  const handleStartQuiz = async () => {
-    if (!uniqueId) {
-      setError('Please enter your unique student ID.');
-      return;
-    }
-
-    try {
-      const fetchedStudent = await fetchStudentByUniqueId(uniqueId);
-      if (!fetchedStudent) {
-        setError('Student not found.');
-        return;
-      }
-      setStudent(fetchedStudent);
-      await checkPreviousSubmission(fetchedStudent.id);
-
-      if (!previousResult) {
-        setQuizStarted(true);
-      }
-      setError(null);
-    } catch (err) {
-      setError('Error retrieving student information.');
-    }
-  };
-
   const handleSubmit = async () => {
     if (!student) {
       setError('Student information is missing.');
@@ -116,12 +113,10 @@ const TakeQuizPage = () => {
     }
 
     try {
-      const result = await submitQuiz(parseInt(quizId), parseInt(student.id), answers);
+      const result = await submitQuiz(parseInt(quizId), student.id, answers);
       setSubmissionResult(result);
-      setQuizStarted(false);
+      setQuizCompleted(true);
       console.log('Quiz submitted:', result);
-
-      navigate(`/quiz-result/${quizId}`, { state: { result } });
     } catch (err) {
       setError('Failed to submit the quiz.');
     }
@@ -137,7 +132,7 @@ const TakeQuizPage = () => {
     return <Typography>Loading...</Typography>;
   }
 
-  if (error && !quizStarted) {
+  if (error) {
     return <Typography color="error">{error}</Typography>;
   }
 
@@ -148,74 +143,35 @@ const TakeQuizPage = () => {
         marginTop: '2rem',
         padding: '2rem',
         borderRadius: '8px',
+        backgroundColor: '#f4f4f9',
       }}
     >
-      {!quizStarted && !submissionResult ? (
-        <>
-          <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
-            Enter Your Unique Student ID to Start the Quiz
-          </Typography>
-          <TextField
-            label="Unique Student ID"
-            variant="outlined"
-            fullWidth
-            value={uniqueId}
-            onChange={(e) => setUniqueId(e.target.value)}
-            sx={{ marginBottom: 3 }}
-          />
-          {error && <Alert severity="error" sx={{ marginBottom: 3 }}>{error}</Alert>}
-          <Button
-            variant="contained"
-            onClick={handleStartQuiz}
-            sx={{
-              backgroundColor: '#34495e',
-              color: 'white',
-              padding: '10px 20px',
-              boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-            }}
-          >
-            Start Quiz
-          </Button>
-        </>
-      ) : (
+      {quizCompleted ? (
         <>
           {submissionResult && (
             <Alert severity="success" sx={{ mt: 3 }}>
               {submissionResult.message}
             </Alert>
           )}
-          {submissionResult && (
-            <Typography variant="h5" color="#2a2a3b" fontWeight="bold" mt={3} mb={2}>
-              Final Score: {submissionResult.score}%
-            </Typography>
-          )}
+          <Typography variant="h5" color="#2a2a3b" fontWeight="bold" mt={3} mb={2}>
+            Final Score: {submissionResult?.score}%
+          </Typography>
           <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
             {quiz?.quiz_name}
           </Typography>
           <Typography variant="body1" color="#2a2a3b" mb={3}>
             {quiz?.description}
           </Typography>
-          {quizStarted && (
-            <Box mt={2} display="flex" justifyContent="center">
-              <Typography variant="body2" color="#2a2a3b">
-                Time Elapsed: {formatTime(timeElapsed)}
-              </Typography>
-            </Box>
-          )}
-
           <TableContainer component={Paper} sx={{ mt: 3 }}>
             <Table>
               <TableBody>
                 {quiz?.questions.map((question, index) => {
-                  const studentAnswer = previousResult
-                    ? previousResult.questionResults.find((res) => res.questionId === question.id)?.studentAnswer
-                    : answers[question.id];
-                  const correctAnswer = previousResult?.questionResults.find(
+                  const questionResult = previousResult?.questionResults.find(
                     (res) => res.questionId === question.id
-                  )?.correctAnswer;
-                  const isCorrect = previousResult?.questionResults.find(
-                    (res) => res.questionId === question.id
-                  )?.isCorrect;
+                  );
+                  const studentAnswer = questionResult?.studentAnswer;
+                  const correctAnswer = questionResult?.correctAnswer;
+                  const isCorrect = questionResult?.isCorrect;
 
                   return (
                     <React.Fragment key={question.id}>
@@ -229,39 +185,45 @@ const TakeQuizPage = () => {
                             padding: '16px',
                           }}
                         >
-                          Question {index + 1}: {question.question_text} - {isCorrect ? 'Correct' : 'Incorrect'}
+                          Question {index + 1}: {question.question_text}
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={2} sx={{ padding: '16px' }}>
+                        <TableCell sx={{ padding: '16px' }}>
+                          <Typography
+                            color={isCorrect ? 'green' : 'red'}
+                            fontWeight="bold"
+                          >
+                            {isCorrect ? 'Correct' : 'Incorrect'}
+                          </Typography>
                           {question.question_type === 'multipleChoice' ? (
-                            <RadioGroup
-                              value={studentAnswer || ''}
-                              onChange={(e) => handleOptionChange(question.id, Number(e.target.value))}
-                              disabled={!!submissionResult}
-                            >
+                            <RadioGroup value={studentAnswer || ''} disabled>
                               {question.options.map((option) => (
                                 <FormControlLabel
                                   key={option.id}
                                   value={option.id}
                                   control={<Radio />}
-                                  label={`${option.answer_text} ${option.correct ? '(Correct)' : ''}`}
+                                  label={option.answer_text}
                                   sx={{
-                                    color: option.correct ? '#4caf50' : studentAnswer === option.id ? '#f44336' : '#000',
+                                    color:
+                                      option.id === correctAnswer
+                                        ? 'green'
+                                        : studentAnswer === option.id
+                                        ? 'red'
+                                        : 'black',
                                   }}
                                 />
                               ))}
                             </RadioGroup>
                           ) : (
-                            <TextField
-                              fullWidth
-                              variant="outlined"
-                              value={studentAnswer || ''}
-                              onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
-                              disabled={!!submissionResult}
-                              error={!isCorrect}
-                              helperText={!isCorrect ? `Correct answer: ${correctAnswer}` : ''}
-                            />
+                            <>
+                              <Typography>Your Answer: {studentAnswer || 'No Answer'}</Typography>
+                              {!isCorrect && (
+                                <Typography color="green">
+                                  Correct Answer: {correctAnswer}
+                                </Typography>
+                              )}
+                            </>
                           )}
                         </TableCell>
                       </TableRow>
@@ -276,23 +238,99 @@ const TakeQuizPage = () => {
               </TableBody>
             </Table>
           </TableContainer>
-
-          {!submissionResult && quizStarted && (
-            <Box mt={4} display="flex" justifyContent="center">
-              <Button
-                variant="contained"
-                onClick={handleSubmit}
-                sx={{
-                  backgroundColor: '#34495e',
-                  color: 'white',
-                  padding: '10px 20px',
-                  boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-                }}
-              >
-                Submit Quiz
-              </Button>
+        </>
+      ) : initialCountdown > 0 ? (
+        <Box display="flex" flexDirection="column" alignItems="center" mt={10}>
+          <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
+            Quiz Starting In...
+          </Typography>
+          <Typography variant="h1" color="#d32f2f" fontWeight="bold" mt={3}>
+            {initialCountdown}
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
+            {quiz?.quiz_name}
+          </Typography>
+          <Typography variant="body1" color="#2a2a3b" mb={3}>
+            {quiz?.description}
+          </Typography>
+          {quizCountdown > 0 && (
+            <Box mt={2} display="flex" justifyContent="center">
+              <Typography variant="body2" color="#d32f2f" fontWeight="bold">
+                Time Remaining: {formatTime(quizCountdown)}
+              </Typography>
             </Box>
           )}
+          <TableContainer component={Paper} sx={{ mt: 3 }}>
+            <Table>
+              <TableBody>
+                {quiz?.questions.map((question, index) => (
+                  <React.Fragment key={question.id}>
+                    <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
+                      <TableCell
+                        colSpan={2}
+                        sx={{
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                          fontSize: '1.1rem',
+                          padding: '16px',
+                        }}
+                      >
+                        Question {index + 1}: {question.question_text}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={2} sx={{ padding: '16px' }}>
+                        {question.question_type === 'multipleChoice' ? (
+                          <RadioGroup
+                            value={answers[question.id] || ''}
+                            onChange={(e) => handleOptionChange(question.id, Number(e.target.value))}
+                          >
+                            {question.options.map((option) => (
+                              <FormControlLabel
+                                key={option.id}
+                                value={option.id}
+                                control={<Radio />}
+                                label={option.answer_text}
+                              />
+                            ))}
+                          </RadioGroup>
+                        ) : (
+                          <TextField
+                            fullWidth
+                            variant="outlined"
+                            value={answers[question.id] || ''}
+                            onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={2}>
+                        <Divider />
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <Box mt={4} display="flex" justifyContent="center">
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              sx={{
+                backgroundColor: '#34495e',
+                color: 'white',
+                padding: '10px 20px',
+                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              Submit Quiz
+            </Button>
+          </Box>
         </>
       )}
     </Container>
