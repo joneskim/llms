@@ -166,14 +166,15 @@ const TakeQuizPage = () => {
             <Table>
               <TableBody>
                 {quiz?.questions.map((question, index) => {
-                  const questionResult = previousResult?.questionResults.find(
+                  const studentAnswer = previousResult?.questionResults.find(
                     (res) => res.questionId === question.id
-                  );
-                  const studentAnswer = questionResult?.studentAnswer;
-                  const correctAnswer = question.options.find(
-                    (option) => option.id === questionResult?.correctAnswer
-                  )?.answer_text;
-                  const isCorrect = questionResult?.isCorrect;
+                  )?.studentAnswer;
+                  const correctAnswer = previousResult?.questionResults.find(
+                    (res) => res.questionId === question.id
+                  )?.correctAnswer;
+                  const isCorrect = previousResult?.questionResults.find(
+                    (res) => res.questionId === question.id
+                  )?.isCorrect;
 
                   return (
                     <React.Fragment key={question.id}>
@@ -191,21 +192,44 @@ const TakeQuizPage = () => {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ padding: '16px' }}>
+                        <TableCell colSpan={2} sx={{ padding: '16px' }}>
+                          {question.question_type === 'multipleChoice' ? (
+                            <RadioGroup value={studentAnswer || ''} disabled>
+                              {question.options.map((option) => (
+                                <FormControlLabel
+                                  key={option.id}
+                                  value={option.id}
+                                  control={<Radio />}
+                                  label={`${option.answer_text} ${
+                                    option.id === correctAnswer ? '(Correct)' : ''
+                                  }`}
+                                  sx={{
+                                    color:
+                                      option.id === studentAnswer
+                                        ? isCorrect
+                                          ? '#4caf50'
+                                          : '#f44336'
+                                        : '#000',
+                                  }}
+                                />
+                              ))}
+                            </RadioGroup>
+                          ) : (
+                            <TextField
+                              fullWidth
+                              variant="outlined"
+                              value={studentAnswer || 'No Answer'}
+                              disabled
+                              error={!isCorrect}
+                              helperText={!isCorrect ? `Correct answer: ${correctAnswer}` : ''}
+                            />
+                          )}
                           <Typography
                             color={isCorrect ? 'green' : 'red'}
                             fontWeight="bold"
                           >
                             {isCorrect ? 'Correct' : 'Incorrect'}
                           </Typography>
-                          <Typography>
-                            Your Answer: {studentAnswer ? question.options.find(option => option.id === studentAnswer)?.answer_text || 'No Answer' : 'No Answer'}
-                          </Typography>
-                          {!isCorrect && correctAnswer && (
-                            <Typography color="green">
-                              Correct Answer: {correctAnswer}
-                            </Typography>
-                          )}
                         </TableCell>
                       </TableRow>
                       <TableRow>
@@ -267,7 +291,9 @@ const TakeQuizPage = () => {
                         {question.question_type === 'multipleChoice' ? (
                           <RadioGroup
                             value={answers[question.id] || ''}
-                            onChange={(e) => handleOptionChange(question.id, Number(e.target.value))}
+                            onChange={(e) =>
+                              handleOptionChange(question.id, Number(e.target.value))
+                            }
                           >
                             {question.options.map((option) => (
                               <FormControlLabel
@@ -283,7 +309,9 @@ const TakeQuizPage = () => {
                             fullWidth
                             variant="outlined"
                             value={answers[question.id] || ''}
-                            onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
+                            onChange={(e) =>
+                              handleTextAnswerChange(question.id, e.target.value)
+                            }
                           />
                         )}
                       </TableCell>
