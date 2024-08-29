@@ -1,6 +1,48 @@
 import { openDB } from 'idb';
 
 // Initialize IndexedDB database and create object stores
+// const initDB = async () => {
+//   try {
+//     const db = await openDB('lmsDatabase3', 1, {
+//       upgrade(db) {
+//         if (!db.objectStoreNames.contains('users')) {
+//           db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('courses')) {
+//           db.createObjectStore('courses', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('students_courses')) {
+//           db.createObjectStore('students_courses', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('modules')) {
+//           db.createObjectStore('modules', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('assignments')) {
+//           db.createObjectStore('assignments', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('quizzes')) {
+//           db.createObjectStore('quizzes', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('questions')) {
+//           db.createObjectStore('questions', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('answers')) {
+//           db.createObjectStore('answers', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('student_quiz_scores')) {
+//           db.createObjectStore('student_quiz_scores', { keyPath: 'id', autoIncrement: true });
+//         }
+//         if (!db.objectStoreNames.contains('progress_tracking')) {
+//           db.createObjectStore('progress_tracking', { keyPath: 'id', autoIncrement: true });
+//         }
+//       },
+//     });
+//     return db;
+//   } catch (error) {
+//     console.error('Failed to open IndexedDB:', error);
+//   }
+// };
+
 const initDB = async () => {
   try {
     const db = await openDB('lmsDatabase3', 1, {
@@ -30,6 +72,7 @@ const initDB = async () => {
           db.createObjectStore('answers', { keyPath: 'id', autoIncrement: true });
         }
         if (!db.objectStoreNames.contains('student_quiz_scores')) {
+          // Store for student quiz results with question-level details
           db.createObjectStore('student_quiz_scores', { keyPath: 'id', autoIncrement: true });
         }
         if (!db.objectStoreNames.contains('progress_tracking')) {
@@ -42,6 +85,7 @@ const initDB = async () => {
     console.error('Failed to open IndexedDB:', error);
   }
 };
+
 
 // Clear existing IndexedDB data to avoid upgrade issues
 const clearDatabase = async () => {
@@ -608,6 +652,179 @@ const fetchQuizById = async (quizId) => {
 };
 
 
+// // Function to submit a quiz and grade it
+// const submitQuiz = async (quizId, studentId, answers) => {
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction(['quizzes', 'questions', 'answers', 'student_quiz_scores'], 'readwrite');
+//     const quizzesStore = tx.objectStore('quizzes');
+//     const questionsStore = tx.objectStore('questions');
+//     const answersStore = tx.objectStore('answers');
+//     const scoresStore = tx.objectStore('student_quiz_scores');
+
+//     // Fetch the quiz
+//     const quiz = await quizzesStore.get(Number(quizId));
+//     if (!quiz) throw new Error('Quiz not found');
+
+//     // Fetch questions associated with the quiz
+//     const allQuestions = await questionsStore.getAll();
+//     const quizQuestions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
+
+//     let totalQuestions = quizQuestions.length;
+//     let correctAnswers = 0;
+//     const questionResults = [];
+
+//     // Grade the quiz
+//     for (const question of quizQuestions) {
+//       const userAnswer = answers[question.id];
+//       const questionAnswers = await answersStore.getAll();
+//       const correctAnswer = questionAnswers.find(
+//         (ans) => ans.question_id === question.id && ans.correct === 1
+//       );
+
+//       let isCorrect = false;
+//       // For multiple choice questions, compare the selected index
+//       if (question.question_type === 'multipleChoice') {
+//         isCorrect = userAnswer !== undefined && correctAnswer && correctAnswer.id === userAnswer;
+//       }
+//       // For text answers, check for exact match
+//       else if (question.question_type === 'textAnswer') {
+//         isCorrect =
+//           userAnswer &&
+//           correctAnswer &&
+//           userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
+//       }
+
+//       if (isCorrect) {
+//         correctAnswers++;
+//       }
+
+//       // Store individual question results
+//       questionResults.push({
+//         questionId: question.id,
+//         questionText: question.question_text,
+//         correctAnswer: correctAnswer?.answer_text,
+//         studentAnswer: userAnswer,
+//         isCorrect,
+//       });
+//     }
+
+//     // Calculate the overall score
+//     const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+//     // Save the overall result and individual question results in the student_quiz_scores table
+//     const result = {
+//       student_id: Number(studentId),
+//       quiz_id: Number(quizId),
+//       score,
+//       submitted_at: new Date().toISOString(),
+//       questionResults,
+//     };
+
+//     await scoresStore.add(result);
+//     await tx.done;
+
+//     // Return the graded result
+//     return {
+//       score,
+//       correctAnswers,
+//       totalQuestions,
+//       questionResults,
+//       message: `You scored ${score}% with ${correctAnswers} out of ${totalQuestions} correct answers.`,
+//     };
+//   } catch (error) {
+//     console.error('Error submitting quiz:', error);
+//     throw error;
+//   }
+// };
+
+
+// Function to submit a quiz and grade it, storing detailed results for each question
+const submitQuiz = async (quizId, studentId, answers) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction(['quizzes', 'questions', 'answers', 'student_quiz_scores'], 'readwrite');
+    const quizzesStore = tx.objectStore('quizzes');
+    const questionsStore = tx.objectStore('questions');
+    const answersStore = tx.objectStore('answers');
+    const scoresStore = tx.objectStore('student_quiz_scores');
+
+    // Fetch the quiz
+    const quiz = await quizzesStore.get(Number(quizId));
+    if (!quiz) throw new Error('Quiz not found');
+
+    // Fetch questions associated with the quiz
+    const allQuestions = await questionsStore.getAll();
+    const quizQuestions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
+
+    let totalQuestions = quizQuestions.length;
+    let correctAnswers = 0;
+    const questionResults = [];
+
+    // Grade the quiz
+    for (const question of quizQuestions) {
+      const userAnswer = answers[question.id];
+      const questionAnswers = await answersStore.getAll();
+      const correctAnswer = questionAnswers.find(
+        (ans) => ans.question_id === question.id && ans.correct === 1
+      );
+
+      let isCorrect = false;
+      // For multiple choice questions, compare the selected index
+      if (question.question_type === 'multipleChoice') {
+        isCorrect = userAnswer !== undefined && correctAnswer && correctAnswer.id === userAnswer;
+      }
+      // For text answers, check for exact match
+      else if (question.question_type === 'textAnswer') {
+        isCorrect =
+          userAnswer &&
+          correctAnswer &&
+          userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
+      }
+
+      if (isCorrect) {
+        correctAnswers++;
+      }
+
+      // Store individual question results
+      questionResults.push({
+        questionId: question.id,
+        questionText: question.question_text,
+        correctAnswer: correctAnswer?.answer_text,
+        studentAnswer: userAnswer,
+        isCorrect,
+      });
+    }
+
+    // Calculate the overall score
+    const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+    // Save the overall result and individual question results in the student_quiz_scores table
+    const result = {
+      student_id: Number(studentId),
+      quiz_id: Number(quizId),
+      score,
+      submitted_at: new Date().toISOString(),
+      questionResults,
+    };
+
+    await scoresStore.add(result);
+    await tx.done;
+
+    // Return the graded result
+    return {
+      score,
+      correctAnswers,
+      totalQuestions,
+      questionResults,
+      message: `You scored ${score}% with ${correctAnswers} out of ${totalQuestions} correct answers.`,
+    };
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+    throw error;
+  }
+};
+
 
 
 export {
@@ -621,5 +838,6 @@ export {
   addModule,
   addQuizToModule,
   fetchModuleById,
-  fetchQuizById
+  fetchQuizById,
+  submitQuiz,
 };
