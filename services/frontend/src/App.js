@@ -10,9 +10,10 @@ import AssignmentsPage from './pages/AssignmentsPage';
 import StudentsPage from './pages/StudentsPage';
 import ModulePage from './pages/ModulePage';
 import QuizCreatePage from './pages/QuizCreatePage';
+import TakeQuizPage from './pages/TakeQuizPage';
+import StudentQuizAccessPage from './pages/StudentQuizAccessPage'; // Import the new page for students
 import { CssBaseline } from '@mui/material';
 import TopBar from './components/Layout/TopBar';
-import TakeQuizPage from './pages/TakeQuizPage'; // Page for taking a quiz without login
 
 const App = () => {
   const [teacherId, setTeacherId] = useState(null);
@@ -52,6 +53,7 @@ const App = () => {
       <CssBaseline />
       {teacherId && <TopBar onLogout={handleLogout} />} {/* Show TopBar only when logged in */}
       <Routes>
+        {/* Routes for teachers when logged in */}
         {teacherId ? (
           <>
             <Route
@@ -68,15 +70,18 @@ const App = () => {
               <Route path="modules/:moduleId" element={<ModulePage />} />
               <Route path="modules/:moduleId/create-quiz" element={<QuizCreatePage />} />
               <Route path="modules/:moduleId/edit-quiz/:quizId" element={<QuizCreatePage />} />
-              <Route path="*" element={<Navigate to="overview" replace />} /> {/* Catch-all to overview */}
+              <Route path="modules/:moduleId/take-quiz/:quizId" element={<TakeQuizPage />} />
+              <Route path="*" element={<Navigate to="overview" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/course-management" replace />} />
           </>
         ) : (
+          // Routes accessible without login, for students taking quizzes
           <>
-            <Route path="/take-quiz/:quizId" element={<TakeQuizPage />} />
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="/student-quiz-access" element={<StudentQuizAccessPage />} /> {/* Student access route */}
+            <Route path="/take-quiz/:quizId" element={<TakeQuizPage />} /> {/* Direct quiz-taking route */}
+            <Route path="*" element={<Navigate to="/student-quiz-access" replace />} /> {/* Default student route */}
           </>
         )}
       </Routes>
