@@ -283,103 +283,6 @@ const fetchQuizzesByStudentInCourse = async (courseId, studentId) => {
   }
 };
 
-// Function to add a quiz to a module
-// const addQuizToModule = async (moduleId, quizTitle, questions = []) => {
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readwrite');
-//     const quizzesStore = tx.objectStore('quizzes');
-//     const newQuiz = {
-//       quiz_name: quizTitle,
-//       description: '',
-//       module_id: moduleId,
-//     };
-//     const quizId = await quizzesStore.add(newQuiz);
-//     console.log('Added quiz:', { ...newQuiz, id: quizId }); // Debug: Log the added quiz
-
-//     // Add questions and answers to the quiz
-//     await addQuestionsToQuiz(quizId, questions);
-
-//     await tx.done;
-//     return { ...newQuiz, id: quizId };
-//   } catch (error) {
-//     console.error('Error adding quiz:', error);
-//   }
-// };
-// const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = []) => {
-//   const db = await initDB();
-//   const tx = db.transaction('quizzes', 'readwrite');
-//   const quizzesStore = tx.objectStore('quizzes');
-//   const newQuiz = {
-//     quiz_name: quizTitle,
-//     description: quizDescription, // Store the description
-//     module_id: moduleId,
-//   };
-//   const quizId = await quizzesStore.add(newQuiz);
-//   await tx.done;
-
-//   await addQuestionsToQuiz(quizId, questions);
-
-//   console.log('Quiz successfully added:', { ...newQuiz, id: quizId });
-//   return { ...newQuiz, id: quizId };
-// };
-
-
-
-// // Function to add questions and answers to a quiz
-// const addQuestionsToQuiz = async (quizId, questions) => {
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction('questions', 'readwrite');
-//     const questionsStore = tx.objectStore('questions');
-
-//     for (const question of questions) {
-//       const questionData = {
-//         question_text: question.text,
-//         quiz_id: quizId,
-//         question_type: question.type,
-//       };
-//       const questionId = await questionsStore.add(questionData);
-
-//       // Add answers associated with each question
-//       await addAnswersToQuestion(questionId, question.options);
-//     }
-
-//     await tx.done;
-//     console.log('Questions successfully added.');
-//   } catch (error) {
-//     console.error('Error adding questions:', error);
-//   }
-// };
-
-// // Function to add answers to a question
-// const addAnswersToQuestion = async (questionId, options) => {
-//   if (!Array.isArray(options)) {
-//     console.error('Options is not iterable:', options);
-//     return;
-//   }
-
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction('answers', 'readwrite');
-//     const store = tx.objectStore('answers');
-
-//     for (const option of options) {
-//       const newAnswer = {
-//         answer_text: option.text,
-//         correct: option.correct ? 1 : 0,
-//         question_id: questionId,
-//       };
-//       await store.add(newAnswer);
-//     }
-
-//     await tx.done;
-//     console.log('Answers successfully added.');
-//   } catch (error) {
-//     console.error('Error adding answers:', error);
-//   }
-// };
-
 // Function to add questions and answers to a quiz
 const addQuestionsToQuiz = async (quizId, questions, db) => {
   try {
@@ -458,32 +361,6 @@ const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions =
   }
 };
 
-
-// Example implementation of validateTeacherLogin
-// const validateTeacherLogin = async (username, password) => {
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction('users', 'readonly');
-//     const store = tx.objectStore('users');
-//     const allUsers = await store.getAll();
-
-//     // Find the user with the matching username and role
-//     const user = allUsers.find(
-//       (user) => user.username === username && user.role === 'teacher'
-//     );
-
-//     // Validate password
-//     if (user && user.password === password) {
-//       return user; // Return the user if the username, role, and password match
-//     } else {
-//       console.warn('Invalid credentials provided');
-//       return null; // Return null if credentials don't match
-//     }
-//   } catch (error) {
-//     console.error('Error validating teacher login:', error);
-//     return null;
-//   }
-// };
 
 const validateTeacherLogin = async (username) => {
   try {
@@ -622,41 +499,6 @@ const fetchModuleById = async (moduleId) => {
   }
 }
 
-// Updated function to fetch a quiz by its ID along with its questions and options
-// const fetchQuizById = async (quizId) => {
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readonly');
-//     const quizzesStore = tx.objectStore('quizzes');
-//     const quiz = await quizzesStore.get(Number(quizId));
-
-//     if (!quiz) throw new Error('Quiz not found');
-
-//     // Fetch questions associated with the quiz
-//     const questionsStore = tx.objectStore('questions');
-//     const allQuestions = await questionsStore.getAll();
-//     quiz.questions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
-
-//     // Fetch answers associated with each question
-//     const answersStore = tx.objectStore('answers');
-//     const allAnswers = await answersStore.getAll();
-
-//     // Attach options (answers) to each question
-//     quiz.questions = quiz.questions.map((question) => {
-//       question.options = allAnswers.filter((answer) => answer.question_id === question.id);
-//       return question;
-//     });
-
-//     console.log('Fetched quiz:', quiz);
-
-//     await tx.done;
-//     return quiz;
-//   } catch (error) {
-//     console.error('Error fetching quiz:', error);
-//     throw error;
-//   }
-// };
-
 
 const fetchQuizById = async (quizId) => {
   try {
@@ -686,178 +528,6 @@ const fetchQuizById = async (quizId) => {
 };
 
 
-// // Function to submit a quiz and grade it
-// const submitQuiz = async (quizId, studentId, answers) => {
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction(['quizzes', 'questions', 'answers', 'student_quiz_scores'], 'readwrite');
-//     const quizzesStore = tx.objectStore('quizzes');
-//     const questionsStore = tx.objectStore('questions');
-//     const answersStore = tx.objectStore('answers');
-//     const scoresStore = tx.objectStore('student_quiz_scores');
-
-//     // Fetch the quiz
-//     const quiz = await quizzesStore.get(Number(quizId));
-//     if (!quiz) throw new Error('Quiz not found');
-
-//     // Fetch questions associated with the quiz
-//     const allQuestions = await questionsStore.getAll();
-//     const quizQuestions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
-
-//     let totalQuestions = quizQuestions.length;
-//     let correctAnswers = 0;
-//     const questionResults = [];
-
-//     // Grade the quiz
-//     for (const question of quizQuestions) {
-//       const userAnswer = answers[question.id];
-//       const questionAnswers = await answersStore.getAll();
-//       const correctAnswer = questionAnswers.find(
-//         (ans) => ans.question_id === question.id && ans.correct === 1
-//       );
-
-//       let isCorrect = false;
-//       // For multiple choice questions, compare the selected index
-//       if (question.question_type === 'multipleChoice') {
-//         isCorrect = userAnswer !== undefined && correctAnswer && correctAnswer.id === userAnswer;
-//       }
-//       // For text answers, check for exact match
-//       else if (question.question_type === 'textAnswer') {
-//         isCorrect =
-//           userAnswer &&
-//           correctAnswer &&
-//           userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
-//       }
-
-//       if (isCorrect) {
-//         correctAnswers++;
-//       }
-
-//       // Store individual question results
-//       questionResults.push({
-//         questionId: question.id,
-//         questionText: question.question_text,
-//         correctAnswer: correctAnswer?.answer_text,
-//         studentAnswer: userAnswer,
-//         isCorrect,
-//       });
-//     }
-
-//     // Calculate the overall score
-//     const score = Math.round((correctAnswers / totalQuestions) * 100);
-
-//     // Save the overall result and individual question results in the student_quiz_scores table
-//     const result = {
-//       student_id: Number(studentId),
-//       quiz_id: Number(quizId),
-//       score,
-//       submitted_at: new Date().toISOString(),
-//       questionResults,
-//     };
-
-//     await scoresStore.add(result);
-//     await tx.done;
-
-//     // Return the graded result
-//     return {
-//       score,
-//       correctAnswers,
-//       totalQuestions,
-//       questionResults,
-//       message: `You scored ${score}% with ${correctAnswers} out of ${totalQuestions} correct answers.`,
-//     };
-//   } catch (error) {
-//     console.error('Error submitting quiz:', error);
-//     throw error;
-//   }
-// };
-
-
-// // Function to submit a quiz and grade it, storing detailed results for each question
-// const submitQuiz = async (quizId, studentId, answers) => {
-//   try {
-//     const db = await initDB();
-//     const tx = db.transaction(['quizzes', 'questions', 'answers', 'student_quiz_scores'], 'readwrite');
-//     const quizzesStore = tx.objectStore('quizzes');
-//     const questionsStore = tx.objectStore('questions');
-//     const answersStore = tx.objectStore('answers');
-//     const scoresStore = tx.objectStore('student_quiz_scores');
-
-//     // Fetch the quiz
-//     const quiz = await quizzesStore.get(Number(quizId));
-//     if (!quiz) throw new Error('Quiz not found');
-
-//     // Fetch questions associated with the quiz
-//     const allQuestions = await questionsStore.getAll();
-//     const quizQuestions = allQuestions.filter((q) => q.quiz_id === Number(quizId));
-
-//     let totalQuestions = quizQuestions.length;
-//     let correctAnswers = 0;
-//     const questionResults = [];
-
-//     // Grade the quiz
-//     for (const question of quizQuestions) {
-//       const userAnswer = answers[question.id];
-//       const questionAnswers = await answersStore.getAll();
-//       const correctAnswer = questionAnswers.find(
-//         (ans) => ans.question_id === question.id && ans.correct === 1
-//       );
-
-//       let isCorrect = false;
-//       // For multiple choice questions, compare the selected index
-//       if (question.question_type === 'multipleChoice') {
-//         isCorrect = userAnswer !== undefined && correctAnswer && correctAnswer.id === userAnswer;
-//       }
-//       // For text answers, check for exact match
-//       else if (question.question_type === 'textAnswer') {
-//         isCorrect =
-//           userAnswer &&
-//           correctAnswer &&
-//           userAnswer.toLowerCase().trim() === correctAnswer.answer_text.toLowerCase().trim();
-//       }
-
-//       if (isCorrect) {
-//         correctAnswers++;
-//       }
-
-//       // Store individual question results
-//       questionResults.push({
-//         questionId: question.id,
-//         questionText: question.question_text,
-//         correctAnswer: correctAnswer?.answer_text,
-//         studentAnswer: userAnswer,
-//         isCorrect,
-//       });
-//     }
-
-//     // Calculate the overall score
-//     const score = Math.round((correctAnswers / totalQuestions) * 100);
-
-//     // Save the overall result and individual question results in the student_quiz_scores table
-//     const result = {
-//       student_id: Number(studentId),
-//       quiz_id: Number(quizId),
-//       score,
-//       submitted_at: new Date().toISOString(),
-//       questionResults,
-//     };
-
-//     await scoresStore.add(result);
-//     await tx.done;
-
-//     // Return the graded result
-//     return {
-//       score,
-//       correctAnswers,
-//       totalQuestions,
-//       questionResults,
-//       message: `You scored ${score}% with ${correctAnswers} out of ${totalQuestions} correct answers.`,
-//     };
-//   } catch (error) {
-//     console.error('Error submitting quiz:', error);
-//     throw error;
-//   }
-// };
 
 const submitQuiz = async (quizId, studentId, answers) => {
   try {
@@ -1007,6 +677,46 @@ const fetchStudentByUniqueId = async (uniqueId) => {
   }
 };
 
+const fetchStudentById = async (studentId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('users', 'readonly');
+    const store = tx.objectStore('users');
+    return await store.get(studentId);
+  } catch (error) {
+    console.error('Error fetching student by ID:', error);
+    return null;
+  }
+}
+
+const fetchCoursesByStudentId = async (studentId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('students_courses', 'readonly');
+    const store = tx.objectStore('students_courses');
+    const allEnrollments = await store.getAll();
+
+    // Filter enrollments to find courses for the specified student
+    const courseIds = allEnrollments
+      .filter((enrollment) => enrollment.student_id === studentId)
+      .map((enrollment) => enrollment.course_id);
+
+    // Fetch course details
+    const coursesStore = db.transaction('courses', 'readonly').objectStore('courses');
+    const courses = await Promise.all(
+      courseIds.map(async (courseId) => await coursesStore.get(courseId))
+    );
+
+    return courses.filter(course => course !== undefined); // Return only valid courses
+  } catch (error) {
+    console.error('Error fetching courses by student ID:', error);
+    return [];
+  }
+};
+
+
+
+
 
 export {
   validateTeacherLogin,
@@ -1025,4 +735,7 @@ export {
   fetchStudentByName,
   fetchStudentByUniqueId,
   fetchQuizzesByStudentInCourse,
+  fetchStudentById,
+  fetchCoursesByStudentId,
+
 };

@@ -32,7 +32,6 @@ const TakeQuizPage = () => {
   const [initialCountdown, setInitialCountdown] = useState(5);
   const [quizCountdown, setQuizCountdown] = useState(300); // Example: 5 minutes timer
   const [submissionResult, setSubmissionResult] = useState(null);
-  const [previousResult, setPreviousResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
 
   useEffect(() => {
@@ -46,7 +45,13 @@ const TakeQuizPage = () => {
       try {
         const fetchedQuiz = await fetchQuizById(quizId);
         setQuiz(fetchedQuiz);
-        await checkPreviousSubmission(student.id);
+
+        const result = await fetchStudentQuizResults(quizId, student.id);
+        if (result) {
+          setSubmissionResult(result);
+          setQuizCompleted(true); // Switch to view mode if quizResult exists
+        }
+
         setLoading(false);
       } catch (err) {
         setError('Failed to load the quiz');
@@ -76,19 +81,6 @@ const TakeQuizPage = () => {
       handleSubmit(); // Automatically submit when quiz countdown reaches zero
     }
   }, [quizCountdown, initialCountdown, quizCompleted]);
-
-  const checkPreviousSubmission = async (id) => {
-    try {
-      const result = await fetchStudentQuizResults(quizId, id);
-      if (result) {
-        setPreviousResult(result);
-        setSubmissionResult(result);
-        setQuizCompleted(true); // Mark the quiz as completed
-      }
-    } catch (err) {
-      console.error('Failed to fetch previous submission:', err);
-    }
-  };
 
   const handleOptionChange = (questionId, optionIndex) => {
     setAnswers((prev) => ({
@@ -176,13 +168,13 @@ const TakeQuizPage = () => {
             <Table>
               <TableBody>
                 {quiz?.questions.map((question, index) => {
-                  const studentAnswer = previousResult?.questionResults.find(
+                  const studentAnswer = submissionResult?.questionResults.find(
                     (res) => res.questionId === question.id
                   )?.studentAnswer;
-                  const correctAnswer = previousResult?.questionResults.find(
+                  const correctAnswer = submissionResult?.questionResults.find(
                     (res) => res.questionId === question.id
                   )?.correctAnswer;
-                  const isCorrect = previousResult?.questionResults.find(
+                  const isCorrect = submissionResult?.questionResults.find(
                     (res) => res.questionId === question.id
                   )?.isCorrect;
 

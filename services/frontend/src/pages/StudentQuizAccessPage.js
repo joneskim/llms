@@ -1,4 +1,3 @@
-// StudentQuizAccessPage.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -17,7 +16,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { fetchStudentByUniqueId, fetchCoursesByTeacherId, fetchQuizzesByModuleId } from '../services/fakeApi';
+import { fetchStudentByUniqueId, fetchCoursesByStudentId, fetchQuizzesByStudentInCourse } from '../services/fakeApi';
 
 const StudentQuizAccessPage = () => {
   const [uniqueId, setUniqueId] = useState('');
@@ -38,8 +37,7 @@ const StudentQuizAccessPage = () => {
 
       if (foundStudent) {
         setStudent(foundStudent);
-        const teacherId = 1; // Example teacher ID, adjust as needed
-        const coursesData = await fetchCoursesByTeacherId(teacherId);
+        const coursesData = await fetchCoursesByStudentId(foundStudent.id); // Fetch only courses the student is enrolled in
         setCourses(coursesData);
       } else {
         setError('Student not found.');
@@ -56,7 +54,7 @@ const StudentQuizAccessPage = () => {
     setSelectedCourse(courseId);
     setLoading(true);
     try {
-      const fetchedQuizzes = await fetchQuizzesByModuleId(courseId); // Adjust to fetch quizzes for selected course
+      const fetchedQuizzes = await fetchQuizzesByStudentInCourse(courseId, student.id); // Fetch quizzes for the student in the selected course
       setQuizzes(fetchedQuizzes);
     } catch (err) {
       setError('Failed to load quizzes.');

@@ -1,30 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-import { fetchQuizzesByStudentInCourse } from '../services/fakeApi';
+import { fetchQuizzesByStudentInCourse, fetchStudentByUniqueId, fetchStudentById } from '../services/fakeApi'; // Use fetchStudentByUniqueId
 
 const StudentQuizzesPage = () => {
   const { studentId, courseId } = useParams();
   const [quizzes, setQuizzes] = useState([]);
+  const [student, setStudent] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadQuizzes = async () => {
+    const loadQuizzesAndStudent = async () => {
       try {
         const quizzesData = await fetchQuizzesByStudentInCourse(Number(courseId), Number(studentId));
+        const studentData = await fetchStudentById(Number(studentId)); // Use fetchStudentByUniqueId
         console.log('Quizzes:', quizzesData);
+        console.log('Student:', studentData);
         setQuizzes(quizzesData);
+        setStudent(studentData);
       } catch (error) {
-        console.error('Error fetching quizzes:', error);
+        console.error('Error fetching quizzes or student:', error);
       }
     };
 
-    loadQuizzes();
+    loadQuizzesAndStudent();
   }, [courseId, studentId]);
 
   const handleQuizClick = (quizId) => {
-    navigate(`/course/${Number(courseId)}/students/${Number(studentId)}/quizzes/${Number(quizId)}/results`);
-
+    navigate(`/course/${Number(courseId)}/students/${Number(studentId)}/quizzes/${Number(quizId)}/results`, {
+      state: { student }, // Pass the student object in the navigation state
+    });
   };
 
   return (
