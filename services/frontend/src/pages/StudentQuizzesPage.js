@@ -1,52 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
-import {
-  Container,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from '@mui/material';
-import { fetchStudentsByCourseId } from '../services/fakeApi';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { fetchQuizzesByStudentInCourse } from '../services/fakeApi';
 
-const StudentsPage = () => {
-  const { courseId } = useParams();
-  const [students, setStudents] = useState([]);
-  const navigate = useNavigate(); // Initialize navigate
+const StudentQuizzesPage = () => {
+  const { studentId, courseId } = useParams();
+  const [quizzes, setQuizzes] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const loadStudents = async () => {
+    const loadQuizzes = async () => {
       try {
-        const studentsData = await fetchStudentsByCourseId(Number(courseId));
-        setStudents(studentsData);
+        const quizzesData = await fetchQuizzesByStudentInCourse(Number(courseId), Number(studentId));
+        console.log('Quizzes:', quizzesData);
+        setQuizzes(quizzesData);
       } catch (error) {
-        console.error('Error fetching students:', error);
+        console.error('Error fetching quizzes:', error);
       }
     };
 
-    loadStudents();
-  }, [courseId]);
+    loadQuizzes();
+  }, [courseId, studentId]);
 
-  const handleStudentClick = (studentId) => {
-    console.log('Student ID:', studentId);
-    console.log('Course ID:', Number(courseId));
-    
-    navigate(`/course/${Number(courseId)}/students/${studentId}/quizzes`); // Navigate to the quiz result page
+  const handleQuizClick = (quizId) => {
+    navigate(`/course/${Number(courseId)}/students/${Number(studentId)}/quizzes/${Number(quizId)}/results`);
+
   };
 
   return (
     <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem', borderRadius: '8px', backgroundColor: '#f7f9fc' }}>
       <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={3}>
-        Students Enrolled in Course
+        Quizzes Taken by Student
       </Typography>
 
-      {students.length === 0 ? (
+      {quizzes.length === 0 ? (
         <Typography variant="body1" color="#2a2a3b">
-          No students are currently enrolled in this course.
+          No quizzes taken by this student in this course.
         </Typography>
       ) : (
         <TableContainer component={Paper}>
@@ -62,7 +51,7 @@ const StudentsPage = () => {
                     padding: '16px',
                   }}
                 >
-                  Name
+                  Quiz Name
                 </TableCell>
                 <TableCell
                   sx={{
@@ -73,19 +62,19 @@ const StudentsPage = () => {
                     padding: '16px',
                   }}
                 >
-                  Email
+                  Score
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {students.map((student) => (
+              {quizzes.map((quiz) => (
                 <TableRow 
-                  key={student.id} 
+                  key={quiz.id} 
                   sx={{ cursor: 'pointer' }} 
-                  onClick={() => handleStudentClick(student.id)} // Make row clickable
+                  onClick={() => handleQuizClick(quiz.id)} // Navigate to the quiz result page
                 >
-                  <TableCell sx={{ color: '#2a2a3b', padding: '16px' }}>{student.name}</TableCell>
-                  <TableCell sx={{ color: '#2a2a3b', padding: '16px' }}>{student.email}</TableCell>
+                  <TableCell sx={{ color: '#2a2a3b', padding: '16px' }}>{quiz.quiz_name}</TableCell>
+                  <TableCell sx={{ color: '#2a2a3b', padding: '16px' }}>{quiz.score}%</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -96,4 +85,4 @@ const StudentsPage = () => {
   );
 };
 
-export default StudentsPage;
+export default StudentQuizzesPage;

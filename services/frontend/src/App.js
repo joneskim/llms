@@ -11,7 +11,9 @@ import StudentsPage from './pages/StudentsPage';
 import ModulePage from './pages/ModulePage';
 import QuizCreatePage from './pages/QuizCreatePage';
 import TakeQuizPage from './pages/TakeQuizPage';
-import StudentQuizAccessPage from './pages/StudentQuizAccessPage'; // Import the new page for students
+import StudentQuizAccessPage from './pages/StudentQuizAccessPage';
+import StudentQuizzesPage from './pages/StudentQuizzesPage';
+import QuizResultPage from './pages/QuizResultPage'; // Import the new page for viewing quiz results
 import { CssBaseline } from '@mui/material';
 import TopBar from './components/Layout/TopBar';
 
@@ -49,43 +51,53 @@ const App = () => {
   };
 
   return (
-    <Router>
-      <CssBaseline />
-      {teacherId && <TopBar onLogout={handleLogout} />} {/* Show TopBar only when logged in */}
-      <Routes>
-        {/* Routes for teachers when logged in */}
-        {teacherId ? (
-          <>
-            <Route
-              path="/course-management"
-              element={<CourseManagement onCourseSelect={handleCourseSelect} teacherId={teacherId} />}
-            />
-            <Route path="/course/:courseId" element={<CoursePage />}>
-              <Route index element={<Navigate to="overview" replace />} />
-              <Route path="overview" element={<OverviewPage />} />
-              <Route path="modules" element={<ModulesPage courseId={selectedCourseId} />} />
-              <Route path="quizzes" element={<QuizzesPage />} />
-              <Route path="assignments" element={<AssignmentsPage />} />
-              <Route path="students" element={<StudentsPage />} />
-              <Route path="modules/:moduleId" element={<ModulePage />} />
-              <Route path="modules/:moduleId/create-quiz" element={<QuizCreatePage />} />
-              <Route path="modules/:moduleId/edit-quiz/:quizId" element={<QuizCreatePage />} />
-              <Route path="modules/:moduleId/take-quiz/:quizId" element={<TakeQuizPage />} />
-              <Route path="*" element={<Navigate to="overview" replace />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/course-management" replace />} />
-          </>
-        ) : (
-          // Routes accessible without login, for students taking quizzes
-          <>
-            <Route path="/login" element={<Login onLogin={handleLogin} />} />
-            <Route path="/student-quiz-access" element={<StudentQuizAccessPage />} /> {/* Student access route */}
-            <Route path="/take-quiz/:quizId" element={<TakeQuizPage />} /> {/* Direct quiz-taking route */}
-            <Route path="*" element={<Navigate to="/student-quiz-access" replace />} /> {/* Default student route */}
-          </>
-        )}
-      </Routes>
-    </Router>
+   <Router>
+  <CssBaseline />
+  {teacherId && <TopBar onLogout={handleLogout} />} {/* Show TopBar only when logged in */}
+  <Routes>
+    {/* Routes for teachers when logged in */}
+    {teacherId ? (
+      <>
+        <Route
+          path="/course-management"
+          element={<CourseManagement onCourseSelect={handleCourseSelect} teacherId={teacherId} />}
+        />
+        <Route path="/course/:courseId" element={<CoursePage />}>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<OverviewPage />} />
+          <Route path="modules" element={<ModulesPage courseId={selectedCourseId} />} />
+          <Route path="quizzes" element={<QuizzesPage />} />
+          <Route path="assignments" element={<AssignmentsPage />} />
+          <Route path="students" element={<StudentsPage />} />
+          <Route path="modules/:moduleId" element={<ModulePage />} />
+          <Route path="modules/:moduleId/create-quiz" element={<QuizCreatePage />} />
+          <Route path="modules/:moduleId/edit-quiz/:quizId" element={<QuizCreatePage />} />
+          <Route path="modules/:moduleId/take-quiz/:quizId" element={<TakeQuizPage />} />
+          <Route path="students/:studentId/quizzes" element={<StudentQuizzesPage />} />
+          <Route
+            path="students/:studentId/quizzes/:quizId/results"
+            element={<QuizResultPage />}
+          /> {/* New route for quiz results */}
+          <Route path="*" element={<Navigate to="overview" replace />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/course-management" replace />} />
+      </>
+    ) : (
+      // Routes accessible without login, for students taking quizzes
+      <>
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/student-quiz-access" element={<StudentQuizAccessPage />} /> {/* Student access route */}
+        <Route path="/take-quiz/:quizId" element={<TakeQuizPage />} /> {/* Direct quiz-taking route */}
+        <Route
+          path="/students/:studentId/courses/:courseId/quizzes/:quizId/results"
+          element={<QuizResultPage />}
+        /> {/* New route for students to view quiz results */}
+        <Route path="*" element={<Navigate to="/student-quiz-access" replace />} /> {/* Default student route */}
+      </>
+    )}
+  </Routes>
+</Router>
+
   );
 };
 

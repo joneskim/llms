@@ -1,4 +1,3 @@
-// TakeQuizPage.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -36,7 +35,6 @@ const TakeQuizPage = () => {
   const [previousResult, setPreviousResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
 
-  // Redirect if not accessed from the correct path
   useEffect(() => {
     if (!student) {
       navigate('/'); // Redirect to home or a relevant page if student info is missing
@@ -153,12 +151,24 @@ const TakeQuizPage = () => {
               {submissionResult.message}
             </Alert>
           )}
-          <Typography variant="h5" color="#2a2a3b" fontWeight="bold" mt={3} mb={2}>
-            Final Score: {submissionResult?.score}%
-          </Typography>
-          <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
-            {quiz?.quiz_name}
-          </Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mt={3} mb={2}>
+            <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
+              {quiz?.quiz_name}
+            </Typography>
+            <Typography
+              variant="h5"
+              color="#2a2a3b"
+              fontWeight="bold"
+              sx={{
+                padding: '10px 20px',
+                backgroundColor: '#e0e0e0',
+                borderRadius: '8px',
+                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              Score: {submissionResult?.score}%
+            </Typography>
+          </Box>
           <Typography variant="body1" color="#2a2a3b" mb={3}>
             {quiz?.description}
           </Typography>
@@ -255,19 +265,27 @@ const TakeQuizPage = () => {
         </Box>
       ) : (
         <>
-          <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
-            {quiz?.quiz_name}
-          </Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
+              {quiz?.quiz_name}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="#d32f2f"
+              fontWeight="bold"
+              sx={{
+                padding: '10px 20px',
+                backgroundColor: '#e0e0e0',
+                borderRadius: '8px',
+                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              Time Remaining: {formatTime(quizCountdown)}
+            </Typography>
+          </Box>
           <Typography variant="body1" color="#2a2a3b" mb={3}>
             {quiz?.description}
           </Typography>
-          {quizCountdown > 0 && (
-            <Box mt={2} display="flex" justifyContent="center">
-              <Typography variant="body2" color="#d32f2f" fontWeight="bold">
-                Time Remaining: {formatTime(quizCountdown)}
-              </Typography>
-            </Box>
-          )}
           <TableContainer component={Paper} sx={{ mt: 3 }}>
             <Table>
               <TableBody>

@@ -259,6 +259,30 @@ const fetchQuizzesByModuleId = async (moduleId) => {
   }
 };
 
+const fetchQuizzesByStudentInCourse = async (courseId, studentId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction(['quizzes', 'student_quiz_scores'], 'readonly');
+    const quizzesStore = tx.objectStore('quizzes');
+    const scoresStore = tx.objectStore('student_quiz_scores');
+    
+    const allQuizzes = await quizzesStore.getAll();
+    const allScores = await scoresStore.getAll();
+
+    const quizzesTaken = allScores.filter((score) => score.student_id === studentId);
+    const quizzesData = quizzesTaken.map((quiz) => {
+      const quizInfo = allQuizzes.find((q) => q.id === quiz.quiz_id);
+      return { ...quizInfo, score: quiz.score };
+    });
+
+    console.log('Fetched quizzes:', quizzesData);
+    return quizzesData;
+  } catch (error) {
+    console.error('Error fetching quizzes:', error);
+    return [];
+  }
+};
+
 // Function to add a quiz to a module
 // const addQuizToModule = async (moduleId, quizTitle, questions = []) => {
 //   try {
@@ -999,5 +1023,6 @@ export {
   submitQuiz,
   fetchStudentQuizResults,
   fetchStudentByName,
-  fetchStudentByUniqueId
+  fetchStudentByUniqueId,
+  fetchQuizzesByStudentInCourse,
 };
