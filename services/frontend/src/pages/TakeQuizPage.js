@@ -30,7 +30,7 @@ const TakeQuizPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [initialCountdown, setInitialCountdown] = useState(5);
-  const [quizCountdown, setQuizCountdown] = useState(300); // Example: 5 minutes timer
+  const [quizCountdown, setQuizCountdown] = useState(null); // Example: 5 minutes timer
   const [submissionResult, setSubmissionResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
 
@@ -50,6 +50,10 @@ const TakeQuizPage = () => {
         if (result) {
           setSubmissionResult(result);
           setQuizCompleted(true); // Switch to view mode if quizResult exists
+        } else {
+          // Initialize quiz countdown based on quiz length
+          const initialTime = fetchedQuiz.quiz_length ? fetchedQuiz.quiz_length * 60 : 300; // Default to 5 minutes if not set
+          setQuizCountdown(initialTime);
         }
 
         setLoading(false);

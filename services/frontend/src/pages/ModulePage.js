@@ -1,5 +1,3 @@
-// ModulePage.js
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
@@ -92,7 +90,7 @@ const ModulePage = () => {
 
   const handleEditQuiz = (quiz) => {
     navigate(`/course/${usedCourseId}/modules/${usedModuleId}/edit-quiz/${quiz.id}`, {
-      state: { quiz },
+      state: { quiz, module },
     });
   };
 
@@ -102,7 +100,6 @@ const ModulePage = () => {
     });
   };
 
-  // Add this function to handle quiz navigation
   const handleTakeQuiz = (quiz) => {
     navigate(`/course/${usedCourseId}/modules/${usedModuleId}/take-quiz/${quiz.id}`, {
       state: { quiz },
@@ -170,7 +167,7 @@ const ModulePage = () => {
                   component="th"
                   scope="row"
                   sx={{ cursor: 'pointer', color: '#2a2a3b' }}
-                  onClick={() => handleTakeQuiz(quiz)} // Navigate to TakeQuizPage
+                  onClick={() => handleTakeQuiz(quiz)}
                 >
                   {quiz.quiz_name}
                 </TableCell>

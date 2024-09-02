@@ -16,46 +16,63 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { fetchCoursesByTeacherId, fetchModulesByCourseId, fetchQuizzesByModuleId, fetchAssignmentsByModuleId } from '../../services/fakeApi';
+import {
+  fetchCoursesByTeacherId,
+  fetchModulesByCourseId,
+  fetchQuizzesByModuleId,
+  fetchAssignmentsByModuleId,
+} from '../../services/fakeApi';
 
 const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [error, setError] = useState(null);
-  const [events, setEvents] = useState([]); // Define the events array to hold calendar events
+  const [events, setEvents] = useState([]); // Events array for calendar events
   const navigate = useNavigate();
 
   useEffect(() => {
     const loadCoursesAndEvents = async () => {
       try {
-        const data = await fetchCoursesByTeacherId(teacherId);
-        setCourses(data);
+        // Fetch all courses for the teacher
+        const coursesData = await fetchCoursesByTeacherId(teacherId);
+        setCourses(coursesData);
 
         const allEvents = [];
-        for (const course of data) {
-          const courseModules = await fetchModulesByCourseId(course.id);
-          for (const module of courseModules) {
-            const moduleQuizzes = await fetchQuizzesByModuleId(module.id);
-            moduleQuizzes.forEach((quiz) => {
-              allEvents.push({
-                title: `Quiz: ${quiz.quiz_name}`,
-                start: quiz.startDate || '2024-09-01', // Replace with actual date
-                end: quiz.dueDate || '2024-09-05', // Replace with actual date
-                color: '#3e95cd',
-              });
-            });
+        const modulesPromises = coursesData.map(course => fetchModulesByCourseId(course.id));
+        const modulesData = await Promise.all(modulesPromises);
 
-            const moduleAssignments = await fetchAssignmentsByModuleId(course.id, module.id);
-            moduleAssignments.forEach((assignment) => {
-              allEvents.push({
-                title: `Assignment: ${assignment.assignment_name}`,
-                start: assignment.startDate || '2024-09-06', // Replace with actual date
-                end: assignment.dueDate || '2024-09-10', // Replace with actual date
-                color: '#ffa726',
-              });
+        for (const [courseIndex, courseModules] of modulesData.entries()) {
+          const course = coursesData[courseIndex];
+
+          // Fetch all quizzes and assignments for the course's modules
+          const quizzesPromises = courseModules.map(module => fetchQuizzesByModuleId(module.id));
+          const assignmentsPromises = courseModules.map(module => fetchAssignmentsByModuleId(course.id, module.id));
+
+          const [quizzesData, assignmentsData] = await Promise.all([
+            Promise.all(quizzesPromises),
+            Promise.all(assignmentsPromises)
+          ]);
+
+          // Flatten arrays and create events
+          quizzesData.flat().forEach(quiz => {
+            allEvents.push({
+              title: `Quiz: ${quiz.quiz_name}`,
+              start: quiz.startDate, // Use actual start date
+              end: quiz.dueDate, // Use actual due date
+              color: '#3e95cd',
             });
-          }
+          });
+
+          assignmentsData.flat().forEach(assignment => {
+            allEvents.push({
+              title: `Assignment: ${assignment.assignment_name}`,
+              start: assignment.startDate, // Use actual start date
+              end: assignment.dueDate, // Use actual due date
+              color: '#ffa726',
+            });
+          });
         }
+
         setEvents(allEvents); // Set the events state with all the collected events
       } catch (err) {
         setError('Failed to load courses.');
@@ -63,6 +80,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
         setLoadingCourses(false);
       }
     };
+
     loadCoursesAndEvents();
   }, [teacherId]);
 

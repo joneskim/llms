@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -23,17 +24,21 @@ import {
 } from 'chart.js';
 import { Chart } from 'chart.js';
 import {
-  fetchCoursesByTeacherId,
   fetchModulesByCourseId,
   fetchStudentsByCourseId,
   fetchQuizzesByModuleId,
   fetchAssignmentsByModuleId,
+  fetchResultsByQuizId,
+  fetchResultsByAssignmentId,
 } from '../services/fakeApi';
 
 // Register the components with Chart.js
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const OverviewPage = () => {
+  const location = useLocation();
+  const { courseId } = location.state || {};
+
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [students, setStudents] = useState([]);
@@ -45,35 +50,22 @@ const OverviewPage = () => {
   useEffect(() => {
     const loadCourseData = async () => {
       try {
-        const teacherId = 1; // Replace with the actual logic to get the teacher ID
-        const courses = await fetchCoursesByTeacherId(teacherId);
-        const currentCourse = courses.find((course) => course.id === 1); // Example: using a specific course ID
-        if (currentCourse) {
-          setCourse(currentCourse);
+        // Fetch modules, students, quizzes, and assignments concurrently using the courseId
+        const [loadedModules, loadedStudents] = await Promise.all([
+          fetchModulesByCourseId(courseId),
+          fetchStudentsByCourseId(courseId),
+        ]);
+        setModules(loadedModules);
+        setStudents(loadedStudents);
 
-          // Fetch modules
-          const loadedModules = await fetchModulesByCourseId(currentCourse.id);
-          setModules(loadedModules);
+        // Fetch quizzes and assignments for each module
+        const [allQuizzes, allAssignments] = await Promise.all([
+          Promise.all(loadedModules.map((module) => fetchQuizzesByModuleId(module.id))),
+          Promise.all(loadedModules.map((module) => fetchAssignmentsByModuleId(courseId, module.id))),
+        ]);
 
-          // Fetch students
-          const loadedStudents = await fetchStudentsByCourseId(currentCourse.id);
-          setStudents(loadedStudents);
-
-          // Fetch quizzes and assignments for each module
-          const allQuizzes = [];
-          const allAssignments = [];
-          for (const module of loadedModules) {
-            const moduleQuizzes = await fetchQuizzesByModuleId(module.id);
-            allQuizzes.push(...moduleQuizzes);
-
-            const moduleAssignments = await fetchAssignmentsByModuleId(currentCourse.id, module.id);
-            allAssignments.push(...moduleAssignments);
-          }
-          setQuizzes(allQuizzes);
-          setAssignments(allAssignments);
-        } else {
-          setError('Course not found.');
-        }
+        setQuizzes(allQuizzes.flat());
+        setAssignments(allAssignments.flat());
       } catch (err) {
         console.error('Error loading course data:', err);
         setError('Failed to load course data.');
@@ -83,7 +75,54 @@ const OverviewPage = () => {
     };
 
     loadCourseData();
-  }, []);
+  }, [courseId]);
+
+  const calculateAverageScore = async (results) => {
+    if (results.length === 0) return 0;
+    const totalScore = results.reduce((sum, result) => sum + result.score, 0);
+    return Math.round(totalScore / results.length);
+  };
+
+  const getRecentResults = async () => {
+    const recentQuizResults = await Promise.all(
+      quizzes.slice(-5).map(async (quiz) => {
+        const results = await fetchResultsByQuizId(quiz.id);
+        const averageScore = await calculateAverageScore(results);
+        return {
+          name: quiz.quiz_name,
+          averageScore,
+          type: 'Quiz',
+        };
+      })
+    );
+
+    const recentAssignmentResults = await Promise.all(
+      assignments.slice(-5).map(async (assignment) => {
+        const results = await fetchResultsByAssignmentId(assignment.id);
+        const averageScore = await calculateAverageScore(results);
+        return {
+          name: assignment.assignment_name,
+          averageScore,
+          type: 'Assignment',
+        };
+      })
+    );
+
+    return [...recentQuizResults, ...recentAssignmentResults];
+  };
+
+  const [recentResults, setRecentResults] = useState([]);
+
+  useEffect(() => {
+    const fetchRecentResults = async () => {
+      const results = await getRecentResults();
+      setRecentResults(results);
+    };
+
+    if (!loading && !error) {
+      fetchRecentResults();
+    }
+  }, [loading, error]);
 
   if (loading) {
     return (
@@ -106,20 +145,6 @@ const OverviewPage = () => {
   const quizzesCount = quizzes.length;
   const assignmentsCount = assignments.length;
   const studentsCount = students.length;
-
-  // Simulate recent results for quizzes and assignments
-  const recentResults = [
-    ...quizzes.slice(-5).map((quiz) => ({
-      name: quiz.quiz_name,
-      averageScore: Math.floor(Math.random() * 100), // Replace with actual score data
-      type: 'Quiz',
-    })),
-    ...assignments.slice(-5).map((assignment) => ({
-      name: assignment.assignment_name,
-      averageScore: Math.floor(Math.random() * 100), // Replace with actual score data
-      type: 'Assignment',
-    })),
-  ];
 
   // Chart Data for Recent Results
   const chartData = {

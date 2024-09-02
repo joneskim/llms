@@ -45,7 +45,7 @@ import { openDB } from 'idb';
 
 const initDB = async () => {
   try {
-    const db = await openDB('lmsDatabase3', 1, {
+    const db = await openDB('lmsDatabase6', 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('users')) {
           db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
@@ -61,6 +61,9 @@ const initDB = async () => {
         }
         if (!db.objectStoreNames.contains('assignments')) {
           db.createObjectStore('assignments', { keyPath: 'id', autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains('tasks')) {
+          db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
         }
         if (!db.objectStoreNames.contains('quizzes')) {
           db.createObjectStore('quizzes', { keyPath: 'id', autoIncrement: true });
@@ -109,6 +112,121 @@ const clearDatabase = async () => {
     console.error('Error clearing database:', error);
   }
 };
+
+const seedDatabaseWithFullQuizzes = async () => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction(
+      ['users', 'courses', 'modules', 'quizzes', 'questions', 'answers', 'students_courses', 'student_quiz_scores'],
+      'readwrite'
+    );
+
+    const usersStore = tx.objectStore('users');
+    const coursesStore = tx.objectStore('courses');
+    const modulesStore = tx.objectStore('modules');
+    const quizzesStore = tx.objectStore('quizzes');
+    const questionsStore = tx.objectStore('questions');
+    const answersStore = tx.objectStore('answers');
+    const studentsCoursesStore = tx.objectStore('students_courses');
+    const scoresStore = tx.objectStore('student_quiz_scores');
+
+    // Seed Users (1 Teacher + 20 Students)
+    await usersStore.put({ id: 1, username: 'teacher1', name: 'John Doe', email: 'johndoe@example.com', role: 'teacher' });
+
+    for (let i = 2; i <= 21; i++) {
+      await usersStore.put({ id: i, username: `student${i - 1}`, name: `Student ${i - 1}`, email: `student${i - 1}@example.com`, role: 'student', uniqueId: generateUniqueId() });
+    }
+
+    // Seed Courses
+    const courses = [
+      { id: 1, course_name: 'Physics 101', description: 'Introduction to basic physics concepts', teacher_id: 1 },
+      { id: 2, course_name: 'Mathematics 101', description: 'Introduction to basic mathematics concepts', teacher_id: 1 },
+      { id: 3, course_name: 'Chemistry 101', description: 'Introduction to basic chemistry concepts', teacher_id: 1 },
+      { id: 4, course_name: 'Biology 101', description: 'Introduction to basic biology concepts', teacher_id: 1 },
+      { id: 5, course_name: 'Computer Science 101', description: 'Introduction to basic programming concepts', teacher_id: 1 },
+      { id: 6, course_name: 'History 101', description: 'Introduction to world history', teacher_id: 1 },
+      { id: 7, course_name: 'English 101', description: 'Introduction to English literature', teacher_id: 1 }
+    ];
+
+    for (const course of courses) {
+      await coursesStore.put(course);
+    }
+
+    // Seed Modules
+    let moduleId = 1;
+    for (const course of courses) {
+      for (let j = 1; j <= 4; j++) {
+        await modulesStore.put({ id: moduleId++, module_name: `Module ${j}`, description: `Description for module ${j}`, course_id: course.id });
+      }
+    }
+
+    // Seed Quizzes with Questions and Answers
+    let quizId = 1;
+    let questionId = 1;
+    let answerId = 1;
+
+    for (let i = 1; i <= moduleId - 1; i++) {
+      for (let j = 1; j <= 20; j++) { // 20 quizzes per module
+        await quizzesStore.put({ id: quizId, quiz_name: `Quiz ${j}`, description: `Test your knowledge on Module ${i}`, module_id: i });
+
+        // Add 5 questions for each quiz
+        for (let k = 1; k <= 5; k++) {
+          await questionsStore.put({ id: questionId, question_text: `Question ${k} for Quiz ${quizId}`, quiz_id: quizId, question_type: 'multipleChoice' });
+
+          // Add 4 answer choices for each question
+          for (let l = 1; l <= 4; l++) {
+            await answersStore.put({ id: answerId++, answer_text: `Answer ${l}`, correct: l === 1 ? 1 : 0, question_id: questionId });
+          }
+
+          questionId++;
+        }
+
+        quizId++;
+      }
+    }
+
+    // Seed Student Enrollments and Quiz Scores
+    for (let studentId = 2; studentId <= 21; studentId++) {
+      for (const course of courses) {
+        await studentsCoursesStore.put({ id: `${studentId}-${course.id}`, student_id: studentId, course_id: course.id });
+
+        for (let moduleId = 1; moduleId <= 4; moduleId++) { // Assuming 4 modules per course
+          for (let quizIndex = 1; quizIndex <= 20; quizIndex++) {
+            const quizId = (moduleId - 1) * 20 + quizIndex;
+            const correctAnswers = 5; // Assume student got all correct
+            const score = 100; // Perfect score
+            const questionResults = [];
+
+            for (let q = 1; q <= 5; q++) {
+              const questionId = ((quizId - 1) * 5) + q;
+              questionResults.push({
+                questionId,
+                questionText: `Question ${q} for Quiz ${quizId}`,
+                correctAnswer: `Answer 1`,
+                studentAnswer: 1, // Assume the student chose the correct answer
+                isCorrect: true,
+              });
+            }
+
+            await scoresStore.put({
+              student_id: studentId,
+              quiz_id: quizId,
+              score,
+              submitted_at: new Date().toISOString(),
+              questionResults,
+            });
+          }
+        }
+      }
+    }
+
+    await tx.done;
+    console.log('Database fully seeded with quizzes, questions, and student results.');
+  } catch (error) {
+    console.error('Error seeding database with full quizzes:', error);
+  }
+};
+
 
 const seedDatabase = async () => {
   try {
@@ -243,7 +361,7 @@ const seedDatabase = async () => {
 //   await seedDatabase();
 // }
 // await seedDatabase(); // Seeds initial data
-
+// await seedDatabaseWithFullQuizzes();
 // Function to fetch quizzes by module ID
 const fetchQuizzesByModuleId = async (moduleId) => {
   try {
@@ -259,29 +377,70 @@ const fetchQuizzesByModuleId = async (moduleId) => {
   }
 };
 
+// const fetchQuizzesByStudentInCourse = async (courseId, studentId) => {
+//   try {
+//     const db = await initDB();
+//     const tx = db.transaction(['quizzes', 'student_quiz_scores'], 'readonly');
+//     const quizzesStore = tx.objectStore('quizzes');
+//     const scoresStore = tx.objectStore('student_quiz_scores');
+    
+//     const allQuizzes = await quizzesStore.getAll();
+//     const allScores = await scoresStore.getAll();
+
+//     const quizzesTaken = allScores.filter((score) => score.student_id === studentId);
+//     const quizzesData = quizzesTaken.map((quiz) => {
+//       const quizInfo = allQuizzes.find((q) => q.id === quiz.quiz_id);
+//       return { ...quizInfo, score: quiz.score };
+//     });
+
+//     console.log('Fetched quizzes:', quizzesData);
+//     return quizzesData;
+//   } catch (error) {
+//     console.error('Error fetching quizzes:', error);
+//     return [];
+//   }
+// };
+
 const fetchQuizzesByStudentInCourse = async (courseId, studentId) => {
   try {
     const db = await initDB();
-    const tx = db.transaction(['quizzes', 'student_quiz_scores'], 'readonly');
+    const tx = db.transaction(['quizzes', 'modules', 'student_quiz_scores'], 'readonly');
     const quizzesStore = tx.objectStore('quizzes');
+    const modulesStore = tx.objectStore('modules');
     const scoresStore = tx.objectStore('student_quiz_scores');
-    
-    const allQuizzes = await quizzesStore.getAll();
-    const allScores = await scoresStore.getAll();
 
-    const quizzesTaken = allScores.filter((score) => score.student_id === studentId);
-    const quizzesData = quizzesTaken.map((quiz) => {
-      const quizInfo = allQuizzes.find((q) => q.id === quiz.quiz_id);
-      return { ...quizInfo, score: quiz.score };
+    console.log('Fetching quizzes for student:', studentId, 'in course:', courseId);
+
+    // Fetch all modules related to the course
+    const allModules = await modulesStore.getAll();
+    const courseModules = allModules.filter(module => module.course_id === courseId);
+    const moduleIds = courseModules.map(module => module.id);
+
+    // Fetch all quizzes related to the course modules
+    const allQuizzes = await quizzesStore.getAll();
+    const courseQuizzes = allQuizzes.filter(quiz => moduleIds.includes(quiz.module_id));
+
+    console.log('Quizzes for course:', courseQuizzes);
+
+    // Fetch all scores related to the student
+    const allScores = await scoresStore.getAll();
+    const studentScores = allScores.filter(score => score.student_id === studentId);
+
+    // Map the quizzes to include the student's score
+    const quizzesData = courseQuizzes.map(quiz => {
+      const studentScore = studentScores.find(score => score.quiz_id === quiz.id);
+      return { ...quiz, score: studentScore ? studentScore.score : null };
     });
 
-    console.log('Fetched quizzes:', quizzesData);
+    console.log('Fetched quizzes with student scores:', quizzesData);
     return quizzesData;
   } catch (error) {
     console.error('Error fetching quizzes:', error);
     return [];
   }
 };
+
+
 
 // Function to add questions and answers to a quiz
 const addQuestionsToQuiz = async (quizId, questions, db) => {
@@ -335,7 +494,34 @@ const addAnswersToQuestion = async (questionId, options, tx) => {
 };
 
 // Updated function to add a quiz to a module
-const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = []) => {
+// const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = []) => {
+//   const db = await initDB();
+//   const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readwrite'); // Transaction for all related stores
+//   const quizzesStore = tx.objectStore('quizzes');
+  
+//   try {
+//     const newQuiz = {
+//       quiz_name: quizTitle,
+//       description: quizDescription,
+//       module_id: moduleId,
+//     };
+//     const quizId = await quizzesStore.add(newQuiz);
+
+//     // Add questions and answers to the quiz within the same transaction
+//     await addQuestionsToQuiz(quizId, questions, db);
+
+//     await tx.done; // Await tx.done after all operations are complete
+//     console.log('Quiz successfully added:', { ...newQuiz, id: quizId });
+//     return { ...newQuiz, id: quizId };
+//   } catch (error) {
+//     console.error('Error adding quiz:', error);
+//     await tx.abort(); // Abort transaction if there's an error
+//     throw error; // Rethrow the error to be handled by calling function
+//   }
+// };
+
+// Updated function to add a quiz to a module
+const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions = [], dueDate = null, quizLength = null) => {
   const db = await initDB();
   const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readwrite'); // Transaction for all related stores
   const quizzesStore = tx.objectStore('quizzes');
@@ -345,6 +531,8 @@ const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions =
       quiz_name: quizTitle,
       description: quizDescription,
       module_id: moduleId,
+      due_date: dueDate ? new Date(dueDate).toISOString() : null, // Store due date as ISO string
+      quiz_length: quizLength, // Store quiz length in minutes
     };
     const quizId = await quizzesStore.add(newQuiz);
 
@@ -360,6 +548,7 @@ const addQuizToModule = async (moduleId, quizTitle, quizDescription, questions =
     throw error; // Rethrow the error to be handled by calling function
   }
 };
+
 
 
 const validateTeacherLogin = async (username) => {
@@ -636,6 +825,34 @@ const fetchStudentQuizResults = async (quizId, studentId) => {
   }
 };
 
+// const fetchStudentQuizResults = async (quizId, studentId) => {
+//   console.log('Fetching student quiz results...');
+//   try {
+//     console.log('Fetching student quiz results...');
+//     const db = await initDB();
+//     const tx = db.transaction('student_quiz_scores', 'readonly');
+//     const scoresStore = tx.objectStore('student_quiz_scores');
+
+//     // Fetch all quiz results
+//     const allResults = await scoresStore.getAll();
+
+//     // Find the specific result for the given quiz and student
+//     const studentResult = allResults.find(
+//       (result) => result.quiz_id === Number(quizId) && result.student_id === Number(studentId)
+//     );
+
+//     // Log the fetched result for debugging
+//     console.log('Fetched student quiz results:', studentResult);
+
+//     // Return the result, or an empty object if undefined
+//     return studentResult || null;
+//   } catch (error) {
+//     console.error('Error fetching student quiz results:', error);
+//     return null;
+//   }
+// };
+
+
 const fetchStudentByName = async (studentName) => {
   try {
     const db = await initDB();
@@ -714,7 +931,178 @@ const fetchCoursesByStudentId = async (studentId) => {
   }
 };
 
+export const fetchResultsByQuizId = async (quizId) => {
+  try {
+    const db = await initDB();  // Initialize the database
+    const tx = db.transaction('student_quiz_scores', 'readonly');  // Open a read-only transaction
+    const store = tx.objectStore('student_quiz_scores');  // Access the `student_quiz_scores` store
+    const allResults = await store.getAll();  // Get all results
 
+    // Filter the results to find those that match the given quizId
+    const results = allResults.filter(result => result.quiz_id === quizId);
+
+    return results;  // Return the filtered results
+  } catch (error) {
+    console.error('Error fetching results by quiz ID:', error);
+    return [];  // Return an empty array in case of error
+  }
+};
+
+
+export const fetchResultsByAssignmentId = async (assignmentId) => {
+  try {
+    const db = await initDB();  // Initialize the database
+    const tx = db.transaction('assignments', 'readonly');  // Open a read-only transaction
+    const store = tx.objectStore('assignments');  // Access the `assignments` store
+    const allResults = await store.getAll();  // Get all results
+
+    // Filter the results to find those that match the given assignmentId
+    const results = allResults.filter(result => result.assignment_id === assignmentId);
+
+    return results;  // Return the filtered results
+  } catch (error) {
+    console.error('Error fetching results by assignment ID:', error);
+    return [];  // Return an empty array in case of error
+  }
+};
+
+const fetchTasks = async () => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('tasks', 'readonly');
+    const store = tx.objectStore('tasks');
+    const allTasks = await store.getAll();
+    return allTasks;
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    return [];
+  }
+};
+
+const addTask = async (task) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('tasks', 'readwrite');
+    const store = tx.objectStore('tasks');
+    const taskId = await store.add({
+      ...task,
+      created_at: new Date().toISOString(),
+    });
+    await tx.done;
+    return { ...task, id: taskId };
+  } catch (error) {
+    console.error('Error adding task:', error);
+  }
+};
+
+const deleteTask = async (taskId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('tasks', 'readwrite');
+    const store = tx.objectStore('tasks');
+    await store.delete(taskId);
+    await tx.done;
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+};
+
+const updateTask = async (taskId, updates) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('tasks', 'readwrite');
+    const store = tx.objectStore('tasks');
+    const existingTask = await store.get(taskId);
+
+    if (existingTask) {
+      const updatedTask = { ...existingTask, ...updates, updated_at: new Date().toISOString() };
+      await store.put(updatedTask);
+      await tx.done;
+      return updatedTask;
+    } else {
+      console.error('Task not found:', taskId);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error updating task:', error);
+  }
+};
+
+const fetchTaskById = async (taskId) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('tasks', 'readonly');
+    const store = tx.objectStore('tasks');
+    return await store.get(taskId);
+  } catch (error) {
+    console.error('Error fetching task by ID:', error);
+    return null;
+  }
+};
+
+
+const fetchTasksByType = async (taskType) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('tasks', 'readonly');
+    const store = tx.objectStore('tasks');
+    const allTasks = await store.getAll();
+    return allTasks.filter(task => task.type === taskType);
+  } catch (error) {
+    console.error('Error fetching tasks by type:', error);
+    return [];
+  }
+};
+
+const updateQuizInModule = async (quizId, updatedQuiz) => {
+  const db = await initDB();
+  const tx = db.transaction(['quizzes', 'questions', 'answers'], 'readwrite');
+  const quizzesStore = tx.objectStore('quizzes');
+
+  try {
+    const existingQuiz = await quizzesStore.get(quizId);
+    if (!existingQuiz) {
+      throw new Error(`Quiz with ID ${quizId} not found.`);
+    }
+
+    const updatedQuizData = {
+      ...existingQuiz,
+      quiz_name: updatedQuiz.quizTitle,
+      description: updatedQuiz.quizDescription,
+      startDate: updatedQuiz.startDate ? new Date(updatedQuiz.startDate).toISOString() : null,
+      dueDate: updatedQuiz.dueDate ? new Date(updatedQuiz.dueDate).toISOString() : null,
+      quiz_length: updatedQuiz.quizLength,
+    };
+
+    await quizzesStore.put(updatedQuizData);
+
+    // Clear existing questions and answers
+    const questionsStore = tx.objectStore('questions');
+    const answersStore = tx.objectStore('answers');
+    const existingQuestions = await questionsStore.getAll();
+    const quizQuestions = existingQuestions.filter((q) => q.quiz_id === quizId);
+
+    for (const question of quizQuestions) {
+      const existingAnswers = await answersStore.getAll();
+      const questionAnswers = existingAnswers.filter((a) => a.question_id === question.id);
+      for (const answer of questionAnswers) {
+        await answersStore.delete(answer.id);
+      }
+      await questionsStore.delete(question.id);
+    }
+
+    // Add new questions and answers
+    await addQuestionsToQuiz(quizId, updatedQuiz.questions, db);
+
+    await tx.done;
+    console.log('Quiz successfully updated:', updatedQuizData);
+    return updatedQuizData;
+  } catch (error) {
+    console.error('Error updating quiz:', error);
+    await tx.abort();
+    throw error;
+  }
+};
 
 
 
@@ -737,5 +1125,13 @@ export {
   fetchQuizzesByStudentInCourse,
   fetchStudentById,
   fetchCoursesByStudentId,
+  fetchTasks,
+  addTask,
+  deleteTask,
+  updateTask,
+  fetchTaskById,
+  fetchTasksByType,
+  updateQuizInModule
+
 
 };

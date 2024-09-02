@@ -6,7 +6,7 @@ import CourseManagement from './components/CourseManagement/CourseManagement';
 import OverviewPage from './pages/OverviewPage';
 import ModulesPage from './pages/ModulesPage';
 import QuizzesPage from './pages/QuizzesPage';
-import AssignmentsPage from './pages/AssignmentsPage';
+import TasksPage from './pages/TasksPage';
 import StudentsPage from './pages/StudentsPage';
 import ModulePage from './pages/ModulePage';
 import QuizCreatePage from './pages/QuizCreatePage';
@@ -15,6 +15,7 @@ import StudentQuizAccessPage from './pages/StudentQuizAccessPage';
 import StudentQuizzesPage from './pages/StudentQuizzesPage';
 import { CssBaseline } from '@mui/material';
 import TopBar from './components/Layout/TopBar';
+import TypingTest from './pages/TypingAssignment';
 
 const App = () => {
   const [teacherId, setTeacherId] = useState(null);
@@ -66,7 +67,7 @@ const App = () => {
               <Route path="overview" element={<OverviewPage />} />
               <Route path="modules" element={<ModulesPage courseId={selectedCourseId} />} />
               <Route path="quizzes" element={<QuizzesPage />} />
-              <Route path="assignments" element={<AssignmentsPage />} />
+              <Route path="assignments" element={<TasksPage />} />
               <Route path="students" element={<StudentsPage />} />
               <Route path="modules/:moduleId" element={<ModulePage />} />
               <Route path="modules/:moduleId/create-quiz" element={<QuizCreatePage />} />
@@ -92,6 +93,7 @@ const App = () => {
               element={<TakeQuizPage viewMode />}  // Use TakeQuizPage for viewing results
             />
             <Route path="*" element={<Navigate to="/student-quiz-access" replace />} /> {/* Default student route */}
+            <Route path="/typing-test" element={<TypingTest />} />
           </>
         )}
       </Routes>

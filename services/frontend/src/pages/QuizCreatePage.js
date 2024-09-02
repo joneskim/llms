@@ -15,36 +15,57 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Box,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import QuizIcon from '@mui/icons-material/Quiz';
-import { addQuizToModule } from '../services/fakeApi';
-import TextAnswerEditor from '../components/TextAnswerEditor';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { fetchQuizById, addQuizToModule, updateQuizInModule } from '../services/fakeApi';
 
 const QuizCreatePage = () => {
+  const { quizId, moduleId, courseId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { moduleId, courseId } = useParams(); // Extract courseId and moduleId from URL parameters
-  const module = location.state?.module || {}; // Default to an empty object to avoid undefined errors
-  const course_Id = location.state?.courseId;
-  const [quizDescription, setQuizDescription] = useState(''); // Add this line
-
-  console.log('Module from state:', module);
+  const module = location.state?.module || {};
 
   const [quizTitle, setQuizTitle] = useState('');
+  const [quizDescription, setQuizDescription] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [dueDate, setDueDate] = useState(null);
+  const [quizLength, setQuizLength] = useState('');
   const [questions, setQuestions] = useState([
     { text: '', textAnswer: '', options: ['', '', '', ''], correctIndex: 0, type: 'multipleChoice' },
   ]);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Debugging: Check courseId and module object on load
   useEffect(() => {
-    console.log('Params:', { courseId, moduleId });
-    console.log('Module from state:', module);
-    if (!courseId && module?.course_id) {
-      console.warn('Course ID missing in params, using course_id from module object');
+    if (quizId) {
+      const loadQuiz = async () => {
+        const quiz = await fetchQuizById(quizId);
+        setQuizTitle(quiz.quiz_name);
+        setQuizDescription(quiz.description);
+        setStartDate(quiz.startDate ? new Date(quiz.startDate) : null);
+        setDueDate(quiz.dueDate ? new Date(quiz.dueDate) : null);
+        setQuizLength(quiz.quiz_length || '');
+        setQuestions(
+          quiz.questions.map((q) => ({
+            text: q.question_text,
+            textAnswer: q.textAnswer || '',
+            options: q.options.map((opt) => opt.answer_text),
+            correctIndex: q.options.findIndex((opt) => opt.correct === 1),
+            type: q.question_type,
+          }))
+        );
+        setIsEditing(true);
+      };
+
+      loadQuiz();
     }
-  }, [courseId, module]);
+  }, [quizId]);
 
   const handleAddQuestion = () => {
     setQuestions([...questions, { text: '', textAnswer: '', options: ['', '', '', ''], correctIndex: 0, type: 'multipleChoice' }]);
@@ -108,47 +129,49 @@ const QuizCreatePage = () => {
           })),
         };
       });
-  
-      const usedCourseId = courseId || course_Id;
-      if (!usedCourseId) {
-        console.error('Error: course_id is missing!');
-        alert('Course ID is missing. Please ensure the correct module is loaded.');
-        return;
-      }
-  
-      console.log('About to add quiz with:', {
-        courseId: usedCourseId,
-        moduleId: module.id,
-        quizTitle,
-        quizDescription, // Include this in the console log
-        formattedQuestions,
-      });
-  
-      try {
-        const added = await addQuizToModule(module.id, quizTitle, quizDescription, formattedQuestions);
-        console.log('Quiz added:', added);
-        // alert(`Quiz "${quizTitle}" created for ${module.module_name}`);
-        console.log('Questions being submitted:', formattedQuestions);
 
-        
+      try {
+        const usedCourseId = courseId || module.course_id;
+        if (!usedCourseId) {
+          console.error('Error: course_id is missing!');
+          alert('Course ID is missing. Please ensure the correct module is loaded.');
+          return;
+        }
+
+        const quizPayload = {
+          moduleId: module.id,
+          quizTitle,
+          quizDescription,
+          questions: formattedQuestions,
+          startDate,
+          dueDate,
+          quizLength,
+        };
+
+        if (isEditing) {
+          await updateQuizInModule(parseInt(quizId), quizPayload);
+          console.log('Quiz updated:', quizPayload);
+        } else {
+          await addQuizToModule(quizPayload);
+          console.log('Quiz added:', quizPayload);
+        }
+
         navigate(`/course/${usedCourseId}/modules/${module.id}`, {
           state: { module: { ...module }, course_id: usedCourseId },
         });
       } catch (error) {
-        console.error('Error adding quiz:', error);
-        alert('An error occurred while adding the quiz.');
+        console.error('Error saving quiz:', error);
+        alert('An error occurred while saving the quiz.');
       }
     } else {
       alert('Please provide a quiz title.');
     }
   };
-  
-  
 
   return (
-    <Container maxWidth="md" sx={{ marginTop: '2rem', padding: '2rem' }}>
-      <Typography variant="h4" color="#333" fontWeight="bold" gutterBottom>
-        Create Quiz for {module?.module_name}
+    <Container maxWidth="md" sx={{ marginTop: '2rem', padding: '2rem', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)' }}>
+      <Typography variant="h5" color="#2c3e50" fontWeight="bold" gutterBottom>
+        {isEditing ? `Edit Quiz: ${quizTitle}` : `Create Quiz for ${module?.module_name}`}
       </Typography>
 
       <TextField
@@ -157,18 +180,49 @@ const QuizCreatePage = () => {
         label="Quiz Title"
         value={quizTitle}
         onChange={(e) => setQuizTitle(e.target.value)}
-        sx={{ marginBottom: '1.5rem', backgroundColor: '#fff', borderRadius: '8px' }}
+        sx={{ marginBottom: '1.5rem', backgroundColor: '#fafafa', borderRadius: '8px' }}
       />
 
-<TextField
-  fullWidth
-  variant="outlined"
-  label="Quiz Description"
-  value={quizDescription}
-  onChange={(e) => setQuizDescription(e.target.value)}
-  sx={{ marginBottom: '1.5rem', backgroundColor: '#fff', borderRadius: '8px' }}
-/>
+      <TextField
+        fullWidth
+        variant="outlined"
+        label="Quiz Description"
+        value={quizDescription}
+        onChange={(e) => setQuizDescription(e.target.value)}
+        multiline
+        rows={3}
+        sx={{ marginBottom: '1.5rem', backgroundColor: '#fafafa', borderRadius: '8px' }}
+      />
 
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            dateFormat="MM/dd/yyyy"
+            placeholderText="Select Start Date"
+            customInput={<TextField fullWidth variant="outlined" label="Start Date" sx={{ backgroundColor: '#fafafa', borderRadius: '8px' }} />}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <DatePicker
+            selected={dueDate}
+            onChange={(date) => setDueDate(date)}
+            dateFormat="MM/dd/yyyy"
+            placeholderText="Select Due Date"
+            customInput={<TextField fullWidth variant="outlined" label="Due Date" sx={{ backgroundColor: '#fafafa', borderRadius: '8px' }} />}
+          />
+        </Grid>
+      </Grid>
+
+      <TextField
+        fullWidth
+        variant="outlined"
+        label="Quiz Length (minutes)"
+        value={quizLength}
+        onChange={(e) => setQuizLength(e.target.value)}
+        sx={{ marginTop: '1.5rem', marginBottom: '1.5rem', backgroundColor: '#fafafa', borderRadius: '8px' }}
+      />
 
       {questions.map((question, index) => (
         <Paper
@@ -176,8 +230,9 @@ const QuizCreatePage = () => {
           sx={{
             padding: '1.5rem',
             marginBottom: '1.5rem',
-            backgroundColor: '#fff',
-            borderRadius: '8px',
+            backgroundColor: '#f7f7f7',
+            borderRadius: '12px',
+            border: '1px solid #ddd',
           }}
         >
           <Grid container spacing={2} alignItems="center">
@@ -188,36 +243,40 @@ const QuizCreatePage = () => {
                 label={`Question ${index + 1}`}
                 value={question.text}
                 onChange={(e) => handleQuestionChange(index, e.target.value)}
-                sx={{ marginBottom: '1rem', backgroundColor: '#fafafa' }}
+                sx={{ marginBottom: '1rem', backgroundColor: '#fafafa', borderRadius: '8px' }}
               />
             </Grid>
             <Grid item xs={2} textAlign="right">
               <Tooltip title="Delete Question">
-                <IconButton onClick={() => handleDeleteQuestion(index)} sx={{ color: '#d9534f' }}>
+                <IconButton onClick={() => handleDeleteQuestion(index)} sx={{ color: '#e74c3c' }}>
                   <DeleteOutlineIcon />
                 </IconButton>
               </Tooltip>
             </Grid>
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Question Type
-              </Typography>
-              <Select
-                fullWidth
-                value={question.type}
-                onChange={(e) => handleQuestionTypeChange(index, e.target.value)}
-                sx={{ marginBottom: '1rem', backgroundColor: '#fafafa' }}
-              >
-                <MenuItem value="multipleChoice">Multiple Choice</MenuItem>
-                <MenuItem value="textAnswer">Text Answer</MenuItem>
-              </Select>
+              <FormControl fullWidth sx={{ marginBottom: '1rem', backgroundColor: '#fafafa', borderRadius: '8px' }}>
+                <InputLabel id={`question-type-label-${index}`}>Question Type</InputLabel>
+                <Select
+                  labelId={`question-type-label-${index}`}
+                  value={question.type}
+                  onChange={(e) => handleQuestionTypeChange(index, e.target.value)}
+                  label="Question Type"
+                >
+                  <MenuItem value="multipleChoice">Multiple Choice</MenuItem>
+                  <MenuItem value="textAnswer">Text Answer</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
 
             {question.type === 'textAnswer' && (
               <Grid item xs={12}>
-                <TextAnswerEditor
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  label="Answer"
                   value={question.textAnswer}
-                  onChange={(value) => handleTextAnswerChange(index, value)}
+                  onChange={(e) => handleTextAnswerChange(index, e.target.value)}
+                  sx={{ backgroundColor: '#fafafa', borderRadius: '8px' }}
                 />
               </Grid>
             )}
@@ -232,7 +291,7 @@ const QuizCreatePage = () => {
                       label={`Option ${optIndex + 1}`}
                       value={option}
                       onChange={(e) => handleOptionChange(index, optIndex, e.target.value)}
-                      sx={{ backgroundColor: '#f7f7f7' }}
+                      sx={{ backgroundColor: '#fafafa', borderRadius: '8px' }}
                     />
                   </Grid>
                   <Grid item xs={4}>
@@ -262,10 +321,13 @@ const QuizCreatePage = () => {
         startIcon={<AddCircleOutlineIcon />}
         onClick={handleAddQuestion}
         sx={{
-          backgroundColor: '#27ae60',
+          backgroundColor: '#1abc9c',
           color: 'white',
           marginBottom: '1.5rem',
-          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+          textTransform: 'none',
         }}
         fullWidth
       >
@@ -277,13 +339,16 @@ const QuizCreatePage = () => {
         startIcon={<QuizIcon />}
         onClick={handleSubmit}
         sx={{
-          backgroundColor: '#34495e',
+          backgroundColor: '#2c3e50',
           color: 'white',
-          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+          textTransform: 'none',
         }}
         fullWidth
       >
-        Create Quiz
+        {isEditing ? 'Update Quiz' : 'Create Quiz'}
       </Button>
     </Container>
   );
