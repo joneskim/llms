@@ -29,8 +29,8 @@ const StudentQuizzesPage = () => {
   useEffect(() => {
     const loadQuizzesAndStudent = async () => {
       try {
-        const quizzesData = await fetchQuizzesByStudentInCourse(Number(courseId), Number(studentId));
-        const studentData = await fetchStudentById(Number(studentId));
+        const quizzesData = await fetchQuizzesByStudentInCourse(courseId);
+        const studentData = await fetchStudentById(studentId);
         setQuizzes(quizzesData);
         setStudent(studentData);
       } catch (error) {

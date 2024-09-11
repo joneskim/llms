@@ -17,6 +17,7 @@ import {
   Box,
   Divider,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import { fetchQuizById, submitQuiz, fetchStudentQuizResults } from '../services/fakeApi';
 
@@ -29,8 +30,8 @@ const TakeQuizPage = () => {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [initialCountdown, setInitialCountdown] = useState(5);
-  const [quizCountdown, setQuizCountdown] = useState(null); // Example: 5 minutes timer
+  const [initialCountdown, setInitialCountdown] = useState(5); // Initial countdown in seconds
+  const [quizCountdown, setQuizCountdown] = useState(null); // Quiz countdown in seconds
   const [submissionResult, setSubmissionResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
 
@@ -48,7 +49,8 @@ const TakeQuizPage = () => {
 
         const result = await fetchStudentQuizResults(quizId, student.id);
         if (result) {
-          setSubmissionResult(result);
+          console.log('Quiz result:', result[0].score);
+          setSubmissionResult(result[0].score);
           setQuizCompleted(true); // Switch to view mode if quizResult exists
         } else {
           // Initialize quiz countdown based on quiz length
@@ -69,7 +71,7 @@ const TakeQuizPage = () => {
   useEffect(() => {
     if (!quizCompleted && initialCountdown > 0) {
       const countdownTimer = setInterval(() => {
-        setInitialCountdown((prev) => prev - 1);
+        setInitialCountdown(prev => prev - 1);
       }, 1000);
       return () => clearInterval(countdownTimer);
     }
@@ -78,7 +80,7 @@ const TakeQuizPage = () => {
   useEffect(() => {
     if (initialCountdown === 0 && !quizCompleted && quizCountdown > 0) {
       const quizTimer = setInterval(() => {
-        setQuizCountdown((prev) => prev - 1);
+        setQuizCountdown(prev => prev - 1);
       }, 1000);
       return () => clearInterval(quizTimer);
     } else if (quizCountdown === 0 && !quizCompleted) {
@@ -87,14 +89,14 @@ const TakeQuizPage = () => {
   }, [quizCountdown, initialCountdown, quizCompleted]);
 
   const handleOptionChange = (questionId, optionIndex) => {
-    setAnswers((prev) => ({
+    setAnswers(prev => ({
       ...prev,
       [questionId]: optionIndex,
     }));
   };
 
   const handleTextAnswerChange = (questionId, value) => {
-    setAnswers((prev) => ({
+    setAnswers(prev => ({
       ...prev,
       [questionId]: value,
     }));
@@ -105,16 +107,20 @@ const TakeQuizPage = () => {
       setError('Student information is missing.');
       return;
     }
-
+  
     try {
-      const result = await submitQuiz(parseInt(quizId), student.id, answers);
+      console.log('Submitting quiz:', quiz.id, student.id, answers);
+      const result = await submitQuiz(quiz.id, student.id, answers);
+      console.log('Quiz submission result:', result);
       setSubmissionResult(result);
       setQuizCompleted(true);
-      window.location.reload(); 
+      // window.location.reload(); 
     } catch (err) {
+      console.error('Error submitting quiz:', err.response?.data || err.message);
       setError('Failed to submit the quiz.');
     }
   };
+  
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -123,11 +129,20 @@ const TakeQuizPage = () => {
   };
 
   if (loading) {
-    return <Typography>Loading...</Typography>;
+    return (
+      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
+        <CircularProgress />
+        <Typography>Loading...</Typography>
+      </Container>
+    );
   }
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return (
+      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
   }
 
   return (
@@ -162,196 +177,67 @@ const TakeQuizPage = () => {
                 boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
               }}
             >
-              Score: {submissionResult?.score}%
+              Score: {submissionResult}%
             </Typography>
           </Box>
-          <Typography variant="body1" color="#2a2a3b" mb={3}>
-            {quiz?.description}
-          </Typography>
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
-            <Table>
-              <TableBody>
-                {quiz?.questions.map((question, index) => {
-                  const studentAnswer = submissionResult?.questionResults.find(
-                    (res) => res.questionId === question.id
-                  )?.studentAnswer;
-                  const correctAnswer = submissionResult?.questionResults.find(
-                    (res) => res.questionId === question.id
-                  )?.correctAnswer;
-                  const isCorrect = submissionResult?.questionResults.find(
-                    (res) => res.questionId === question.id
-                  )?.isCorrect;
-
-                  return (
-                    <React.Fragment key={question.id}>
-                      <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
-                        <TableCell
-                          colSpan={2}
-                          sx={{
-                            color: '#ffffff',
-                            fontWeight: 'bold',
-                            fontSize: '1.1rem',
-                            padding: '16px',
-                          }}
-                        >
-                          Question {index + 1}: {question.question_text}
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell colSpan={2} sx={{ padding: '16px' }}>
-                          {question.question_type === 'multipleChoice' ? (
-                            <RadioGroup value={studentAnswer || ''} disabled>
-                              {question.options.map((option) => (
-                                <FormControlLabel
-                                  key={option.id}
-                                  value={option.id}
-                                  control={<Radio />}
-                                  label={`${option.answer_text} ${
-                                    option.id === correctAnswer ? '(Correct)' : ''
-                                  }`}
-                                  sx={{
-                                    color:
-                                      option.id === studentAnswer
-                                        ? isCorrect
-                                          ? '#4caf50'
-                                          : '#f44336'
-                                        : '#000',
-                                  }}
-                                />
-                              ))}
-                            </RadioGroup>
-                          ) : (
-                            <TextField
-                              fullWidth
-                              variant="outlined"
-                              value={studentAnswer || 'No Answer'}
-                              disabled
-                              error={!isCorrect}
-                              helperText={!isCorrect ? `Correct answer: ${correctAnswer}` : ''}
-                            />
-                          )}
-                          <Typography
-                            color={isCorrect ? 'green' : 'red'}
-                            fontWeight="bold"
-                          >
-                            {isCorrect ? 'Correct' : 'Incorrect'}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell colSpan={2}>
-                          <Divider />
-                        </TableCell>
-                      </TableRow>
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
         </>
-      ) : initialCountdown > 0 ? (
-        <Box display="flex" flexDirection="column" alignItems="center" mt={10}>
-          <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
-            Quiz Starting In...
-          </Typography>
-          <Typography variant="h1" color="#d32f2f" fontWeight="bold" mt={3}>
-            {initialCountdown}
-          </Typography>
-        </Box>
       ) : (
         <>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
               {quiz?.quiz_name}
             </Typography>
-            <Typography
-              variant="body2"
-              color="#d32f2f"
-              fontWeight="bold"
-              sx={{
-                padding: '10px 20px',
-                backgroundColor: '#e0e0e0',
-                borderRadius: '8px',
-                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              Time Remaining: {formatTime(quizCountdown)}
+            <Typography variant="h6" color="#2a2a3b">
+              Time Left: {formatTime(quizCountdown || 0)}
             </Typography>
           </Box>
-          <Typography variant="body1" color="#2a2a3b" mb={3}>
-            {quiz?.description}
-          </Typography>
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
+          <Divider sx={{ mb: 3 }} />
+          <TableContainer component={Paper}>
             <Table>
               <TableBody>
-                {quiz?.questions.map((question, index) => (
-                  <React.Fragment key={question.id}>
-                    <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
-                      <TableCell
-                        colSpan={2}
-                        sx={{
-                          color: '#ffffff',
-                          fontWeight: 'bold',
-                          fontSize: '1.1rem',
-                          padding: '16px',
-                        }}
-                      >
-                        Question {index + 1}: {question.question_text}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={2} sx={{ padding: '16px' }}>
-                        {question.question_type === 'multipleChoice' ? (
-                          <RadioGroup
-                            value={answers[question.id] || ''}
-                            onChange={(e) =>
-                              handleOptionChange(question.id, Number(e.target.value))
-                            }
-                          >
-                            {question.options.map((option) => (
-                              <FormControlLabel
-                                key={option.id}
-                                value={option.id}
-                                control={<Radio />}
-                                label={option.answer_text}
-                              />
-                            ))}
-                          </RadioGroup>
-                        ) : (
-                          <TextField
-                            fullWidth
-                            variant="outlined"
-                            value={answers[question.id] || ''}
-                            onChange={(e) =>
-                              handleTextAnswerChange(question.id, e.target.value)
-                            }
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={2}>
-                        <Divider />
-                      </TableCell>
-                    </TableRow>
-                  </React.Fragment>
+                {quiz?.questions.map((question) => (
+                  <TableRow key={question.id}>
+                    <TableCell>
+                      <Typography variant="h6" color="#2a2a3b">
+                        {question.text}
+                      </Typography>
+                      {question.type === 'text' ? (
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={3}
+                          value={answers[question.id] || ''}
+                          onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
+                          sx={{ mb: 2 }}
+                        />
+                      ) : (
+                        <RadioGroup
+                          value={answers[question.id] || ''}
+                          onChange={(e) => handleOptionChange(question.id, e.target.value)}
+                        >
+                          {question.options.map((option) => (
+                            <FormControlLabel
+                              key={option.id}
+                              value={option.id}
+                              control={<Radio />}
+                              label={option.text}
+                            />
+                          ))}
+                        </RadioGroup>
+                      )}
+                    </TableCell>
+                  </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-          <Box mt={4} display="flex" justifyContent="center">
+          <Box display="flex" justifyContent="flex-end" mt={3}>
             <Button
               variant="contained"
+              color="primary"
               onClick={handleSubmit}
-              sx={{
-                backgroundColor: '#34495e',
-                color: 'white',
-                padding: '10px 20px',
-                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-              }}
             >
-              Submit Quiz
+              Submit
             </Button>
           </Box>
         </>

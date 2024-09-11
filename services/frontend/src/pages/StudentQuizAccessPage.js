@@ -54,7 +54,7 @@ const StudentQuizAccessPage = () => {
     setSelectedCourse(courseId);
     setLoading(true);
     try {
-      const fetchedQuizzes = await fetchQuizzesByStudentInCourse(courseId, student.id); // Fetch quizzes for the student in the selected course
+      const fetchedQuizzes = await fetchQuizzesByStudentInCourse(courseId); // Fetch quizzes for the student in the selected course
       setQuizzes(fetchedQuizzes);
     } catch (err) {
       setError('Failed to load quizzes.');

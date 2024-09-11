@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Student {
+  id        String              @id @default(uuid())
+  uniqueId  String              @unique
+  name      String
+  email     String?             @unique
+  password  String
+  courses   Course[]            @relation("StudentCourses")
+  quizResults StudentQuizResult[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+model Teacher {
+  id        String    @id @default(uuid())
+  uniqueId  String    @unique
+  name      String
+  email     String    @unique
+  password  String
+  courses   Course[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CorrectAnswer {
+  id          String   @id @default(uuid())
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id])
+  answerText  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+
+
+model Course {
+  id          String    @id @default(uuid())
+  course_name String
+  description String?
+  teacherId   String
+  teacher     Teacher   @relation(fields: [teacherId], references: [id])
+  students    Student[] @relation("StudentCourses")
+  modules     Module[]  // Established relation
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Module {
+  id          String   @id @default(uuid())
+  module_name String
+  description String?
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  assignments Assignment[]
+  quizzes     Quiz[]
+  tasks       Task[]   // Ensure this line exists
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Task {
+  id        String   @id @default(uuid())
+  taskName  String
+  taskType  String
+  dueDate   DateTime?
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+
+model Assignment {
+  id              String    @id @default(uuid())
+  assignment_name String
+  description     String?
+  moduleId        String
+  module          Module    @relation(fields: [moduleId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Quiz {
+  id          String    @id @default(uuid())
+  quiz_name   String
+  description String?
+  moduleId    String
+  module      Module    @relation(fields: [moduleId], references: [id])
+  results     StudentQuizResult[]
+  questions   Question[]  // Added relation
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Question {
+  id          String    @id @default(uuid())
+  text        String
+  quizId      String
+  quiz        Quiz      @relation(fields: [quizId], references: [id])
+  options     Option[]  // Updated relation
+  answers     Answer[]  // Added relation
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  correctAnswer CorrectAnswer[]
+}
+
+
+
+model Option {
+  id          String    @id @default(uuid())
+  text        String
+  questionId  String
+  question    Question  @relation(fields: [questionId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model StudentQuizResult {
+  id        String   @id @default(uuid()) // Changed from Int to UUID
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  quizId    String
+  quiz      Quiz    @relation(fields: [quizId], references: [id])
+  score     Int
+  answers   Answer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Answer {
+  id          String   @id @default(uuid()) // Changed from Int to UUID
+  answerText  String
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id])
+  quizResultId String
+  quizResult  StudentQuizResult @relation(fields: [quizResultId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

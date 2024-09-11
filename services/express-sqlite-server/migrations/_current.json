@@ -1,0 +1,37 @@
+{
+    "tables": {
+        "Tasks": {
+            "tableName": "Tasks",
+            "indexes": []
+        },
+        "Assignments": {
+            "tableName": "Assignments",
+            "indexes": []
+        },
+        "Quizzes": {
+            "tableName": "Quizzes",
+            "indexes": []
+        },
+        "Student": {
+            "tableName": "Student",
+            "indexes": []
+        },
+        "Teachers": {
+            "tableName": "Teachers",
+            "indexes": []
+        },
+        "Courses": {
+            "tableName": "Courses",
+            "indexes": []
+        },
+        "CourseStudent": {
+            "tableName": "CourseStudent",
+            "indexes": []
+        },
+        "StudentQuizResults": {
+            "tableName": "StudentQuizResults",
+            "indexes": []
+        }
+    },
+    "revision": 1
+}

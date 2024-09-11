@@ -21,7 +21,7 @@ const StudentsPage = () => {
   useEffect(() => {
     const loadStudents = async () => {
       try {
-        const studentsData = await fetchStudentsByCourseId(Number(courseId));
+        const studentsData = await fetchStudentsByCourseId(courseId);
         setStudents(studentsData);
       } catch (error) {
         console.error('Error fetching students:', error);

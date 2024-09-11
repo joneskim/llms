@@ -117,56 +117,47 @@ const QuizCreatePage = () => {
 
   const handleSubmit = async () => {
     if (module && quizTitle) {
-      const formattedQuestions = questions.map((q) => {
-        const optionsArray = Array.isArray(q.options) ? q.options : [];
-        return {
-          text: q.text,
-          textAnswer: q.textAnswer,
-          type: q.type,
-          options: optionsArray.map((option, index) => ({
-            text: option,
-            correct: q.correctIndex === index,
-          })),
-        };
-      });
-
-      try {
-        const usedCourseId = courseId || module.course_id;
-        if (!usedCourseId) {
-          console.error('Error: course_id is missing!');
-          alert('Course ID is missing. Please ensure the correct module is loaded.');
-          return;
-        }
-
+        const formattedQuestions = questions.map((q) => ({
+            question_text: q.text,
+            question_type: q.type,
+            textAnswer: q.type === 'textAnswer' ? q.textAnswer : undefined,
+            options: q.type === 'multipleChoice'
+                ? q.options.map((opt, index) => ({
+                    answer_text: opt,
+                    correct: q.correctIndex === index,
+                }))
+                : undefined,
+        }));
+        
         const quizPayload = {
-          moduleId: module.id,
-          quizTitle,
-          quizDescription,
-          questions: formattedQuestions,
-          startDate,
-          dueDate,
-          quizLength,
+            module_id: moduleId,
+            quiz_name: quizTitle,
+            description: quizDescription,
+            questions: formattedQuestions,
+            start_date: startDate ? startDate.toISOString() : null,
+            due_date: dueDate ? dueDate.toISOString() : null,
+            quiz_length: quizLength,
         };
 
-        if (isEditing) {
-          await updateQuizInModule(parseInt(quizId), quizPayload);
-          console.log('Quiz updated:', quizPayload);
-        } else {
-          await addQuizToModule(quizPayload);
-          console.log('Quiz added:', quizPayload);
-        }
+        try {
+            if (isEditing) {
+                await updateQuizInModule(parseInt(quizId), quizPayload);
+            } else {
+                await addQuizToModule(quizPayload);
+            }
 
-        navigate(`/course/${usedCourseId}/modules/${module.id}`, {
-          state: { module: { ...module }, course_id: usedCourseId },
-        });
-      } catch (error) {
-        console.error('Error saving quiz:', error);
-        alert('An error occurred while saving the quiz.');
-      }
+            navigate(`/course/${courseId}/modules/${moduleId}`, {
+                state: { module: { ...module }, course_id: courseId },
+            });
+        } catch (error) {
+            console.error('Error saving quiz:', error);
+            alert('An error occurred while saving the quiz.');
+        }
     } else {
-      alert('Please provide a quiz title.');
+        alert('Please provide a quiz title.');
     }
-  };
+};
+
 
   return (
     <Container maxWidth="md" sx={{ marginTop: '2rem', padding: '2rem', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)' }}>

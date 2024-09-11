@@ -24,6 +24,8 @@
     "idb": "^8.0.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
+    "lorem-ipsum": "^2.0.8",
+    "mammoth": "^1.8.0",
     "ra-data-fakerest": "^5.1.2",
     "ra-data-simple-rest": "^5.1.2",
     "react": "^18.3.1",

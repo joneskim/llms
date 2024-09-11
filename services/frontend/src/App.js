@@ -16,6 +16,7 @@ import StudentQuizzesPage from './pages/StudentQuizzesPage';
 import { CssBaseline } from '@mui/material';
 import TopBar from './components/Layout/TopBar';
 import TypingTest from './pages/TypingAssignment';
+import StudentTaskAccessPage from './pages/StudentTasksPage';
 
 const App = () => {
   const [teacherId, setTeacherId] = useState(null);
@@ -86,7 +87,7 @@ const App = () => {
           // Routes accessible without login, for students taking quizzes
           <>
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
-            <Route path="/student-quiz-access" element={<StudentQuizAccessPage />} /> {/* Student access route */}
+            <Route path="/student-quiz-access" element={<StudentTaskAccessPage />} /> {/* Student access route */}
             <Route path="/take-quiz/:quizId" element={<TakeQuizPage />} /> {/* Direct quiz-taking route */}
             <Route
               path="/students/:studentId/courses/:courseId/quizzes/:quizId/results"

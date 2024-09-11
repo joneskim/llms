@@ -9,20 +9,23 @@ const Login = ({ onLogin }) => {
 
   const handleLogin = async () => {
     try {
-      const user = await validateTeacherLogin(username, password);
+      // Call the API with both username and password
+      const response = await validateTeacherLogin(username, password);
 
-      if (user) {
-        const teacherId = Number(user.id);
-        if (!isNaN(teacherId)) {
-          onLogin(teacherId);
-          localStorage.setItem('teacher_id', teacherId);
-          console.log(`Logged in as ${user.name}, ID: ${teacherId}`);
-        } else {
-          console.error('Failed to parse teacher ID as a number');
-          setError('Unexpected error: Invalid user ID.');
-        }
+      // Log the API response to inspect the structure
+      console.log('Login response:', response);
+
+      if (response && response.message === 'Login successful') {
+        const { sessionToken } = response;
+        console.log('Session Token:', sessionToken);
+
+        // Use the sessionToken for further operations
+        onLogin(sessionToken);
+        localStorage.setItem('sessionToken', sessionToken);
+
+        console.log(`Logged in successfully with token: ${sessionToken}`);
       } else {
-        setError('Login failed: User not found or incorrect role.');
+        setError('Login failed: Incorrect credentials or server error.');
       }
     } catch (err) {
       console.error('Error during login:', err);
@@ -38,9 +41,7 @@ const Login = ({ onLogin }) => {
       justifyContent="center"
       minHeight="100vh"
       padding={0}
-      sx={{ backgroundColor: '#f7f9fc',
-        
-       }}
+      sx={{ backgroundColor: '#f7f9fc' }}
     >
       <Paper
         elevation={3}
@@ -87,7 +88,6 @@ const Login = ({ onLogin }) => {
           onChange={(e) => setUsername(e.target.value)}
           sx={{
             width: '70%',
-            // center
             marginLeft: 'auto',
             marginRight: 'auto',
             input: { color: '#2a2a3b' },
@@ -115,7 +115,6 @@ const Login = ({ onLogin }) => {
           onChange={(e) => setPassword(e.target.value)}
           sx={{
             width: '70%',
-            // center
             marginLeft: 'auto',
             marginRight: 'auto',
             input: { color: '#2a2a3b' },
@@ -144,7 +143,6 @@ const Login = ({ onLogin }) => {
           fullWidth
           sx={{
             width: '70%',
-            // center
             marginLeft: 'auto',
             marginRight: 'auto',
             marginTop: '1rem',
