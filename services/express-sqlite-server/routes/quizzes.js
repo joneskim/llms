@@ -185,18 +185,80 @@ router.post('/:quizId/submit', async (req, res) => {
 
 // Get all results for a specific quiz
 router.get('/:quizId/results', async (req, res) => {
-  try {
-    const results = await prisma.studentQuizResult.findMany({
-      where: { quizId: req.params.quizId },
-    });
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'No results found for this quiz' });
+    const { student_id } = req.query;
+
+    if (!student_id) {
+        return res.status(400).json({ error: 'Student ID is required' });
     }
-    res.json(results);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
+
+    try {
+        // Fetch the quiz with questions, options, and correct answers
+        const quiz = await prisma.quiz.findUnique({
+            where: { id: req.params.quizId },
+            include: {
+                questions: {
+                    include: {
+                        options: true,
+                        correctAnswer: true, // Ensure this field exists in your schema
+                    },
+                },
+            },
+        });
+
+        if (!quiz) {
+            return res.status(404).json({ error: 'Quiz not found' });
+        }
+
+        // Fetch the student's results for the quiz
+        const studentResults = await prisma.studentQuizResult.findMany({
+            where: {
+                quizId: req.params.quizId,
+                studentId: student_id,
+            },
+            include: {
+                answers: true,
+            },
+        });
+
+        if (studentResults.length === 0) {
+            return res.status(404).json({ error: 'No results found for this student' });
+        }
+
+        // Prepare the correct answers
+        const correctAnswers = {};
+        quiz.questions.forEach(question => {
+            const correctAnswer = question.correctAnswer[0]?.answerText;
+            correctAnswers[question.id] = correctAnswer;
+            console.log('Correct answer:', correctAnswer);
+        });
+
+        // now fetch answer with id answerText.. answerText is apparently the id of the answer.. fetch the option with that id
+        const answers = studentResults[0].answers;
+        for (const answer of answers) {
+            const answerText = answer.answerText;
+            const option = quiz.questions.find(question => question.id === answer.questionId).options.find(option => option.id === answerText);
+            answer.answerText = option.text;
+        }
+        
+
+        const score = studentResults[0].score;
+        console.log('Student score:', score);
+        console.log('Correct answers:', correctAnswers);
+        console.log('Student answers:', studentResults[0].answers); 
+
+        res.json({
+            score: score,
+            correctAnswers: correctAnswers,
+            answers: studentResults[0].answers,
+        });
+
+    } catch (error) {
+        console.error('Error fetching quiz results:', error);
+        res.status(500).json({ error: 'An error occurred while fetching quiz results' });
+    }
 });
+
+  
 
 router.get('/course/:courseId', async (req, res) => {
     console.log('Received request parameters:', req.params);

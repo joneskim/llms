@@ -79,6 +79,7 @@ export const fetchStudentQuizResults = async (quizId, studentId) => {
     const response = await axios.get(`${API_BASE_URL}/quizzes/${quizId}/results`, {
       params: { student_id: studentId }
     });
+    console.log('Fetched student quiz results:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching student quiz results:', error);

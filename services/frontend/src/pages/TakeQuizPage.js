@@ -18,8 +18,21 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  styled,
 } from '@mui/material';
 import { fetchQuizById, submitQuiz, fetchStudentQuizResults } from '../services/fakeApi';
+
+const StyledFormControlLabel = styled(FormControlLabel)(({ theme, isSelected, isCorrect }) => ({
+  '.MuiRadio-root': {
+    color: isSelected ? (isCorrect ? theme.palette.success.main : theme.palette.error.main) : 'inherit',
+  },
+  color: isSelected ? (isCorrect ? theme.palette.success.main : theme.palette.error.main) : 'inherit',
+  border: isSelected ? `1px solid ${isCorrect ? theme.palette.success.main : theme.palette.error.main}` : 'none',
+  borderRadius: '8px',
+  padding: '8px 16px',
+  marginBottom: '8px',
+  backgroundColor: isSelected ? (isCorrect ? theme.palette.success.light : theme.palette.error.light) : 'inherit',
+}));
 
 const TakeQuizPage = () => {
   const { quizId } = useParams();
@@ -27,13 +40,14 @@ const TakeQuizPage = () => {
   const location = useLocation();
   const { student } = location.state || {}; // Ensure this is passed from the previous page
   const [quiz, setQuiz] = useState(null);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [initialCountdown, setInitialCountdown] = useState(5); // Initial countdown in seconds
   const [quizCountdown, setQuizCountdown] = useState(null); // Quiz countdown in seconds
   const [submissionResult, setSubmissionResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [correctAnswers, setCorrectAnswers] = useState({}); // State to store correct answers
 
   useEffect(() => {
     if (!student) {
@@ -49,11 +63,12 @@ const TakeQuizPage = () => {
 
         const result = await fetchStudentQuizResults(quizId, student.id);
         if (result) {
-          console.log('Quiz result:', result[0].score);
-          setSubmissionResult(result[0].score);
-          setQuizCompleted(true); // Switch to view mode if quizResult exists
+          setCorrectAnswers(result.correctAnswers || {});
+          setAnswers(result.answers || []); // Load the student's previous answers
+          const percentage = (result.score / fetchedQuiz.questions.length) * 100;
+          setSubmissionResult(percentage);
+          setQuizCompleted(true);
         } else {
-          // Initialize quiz countdown based on quiz length
           const initialTime = fetchedQuiz.quiz_length ? fetchedQuiz.quiz_length * 60 : 300; // Default to 5 minutes if not set
           setQuizCountdown(initialTime);
         }
@@ -88,10 +103,10 @@ const TakeQuizPage = () => {
     }
   }, [quizCountdown, initialCountdown, quizCompleted]);
 
-  const handleOptionChange = (questionId, optionIndex) => {
+  const handleOptionChange = (questionId, optionText) => {
     setAnswers(prev => ({
       ...prev,
-      [questionId]: optionIndex,
+      [questionId]: optionText,
     }));
   };
 
@@ -107,20 +122,19 @@ const TakeQuizPage = () => {
       setError('Student information is missing.');
       return;
     }
-  
+
     try {
-      console.log('Submitting quiz:', quiz.id, student.id, answers);
       const result = await submitQuiz(quiz.id, student.id, answers);
-      console.log('Quiz submission result:', result);
-      setSubmissionResult(result);
+      setCorrectAnswers(result.correctAnswers || {}); // Safeguard against undefined correctAnswers
+
+      const percentage = (result.score / quiz.questions.length) * 100;
+
+      setSubmissionResult(percentage);
       setQuizCompleted(true);
-      // window.location.reload(); 
     } catch (err) {
-      console.error('Error submitting quiz:', err.response?.data || err.message);
       setError('Failed to submit the quiz.');
     }
   };
-  
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -159,27 +173,57 @@ const TakeQuizPage = () => {
         <>
           {submissionResult && (
             <Alert severity="success" sx={{ mt: 3 }}>
-              {submissionResult.message}
+              {`Your score: ${submissionResult}%`}
             </Alert>
           )}
           <Box display="flex" justifyContent="space-between" alignItems="center" mt={3} mb={2}>
             <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
               {quiz?.quiz_name}
             </Typography>
-            <Typography
-              variant="h5"
-              color="#2a2a3b"
-              fontWeight="bold"
-              sx={{
-                padding: '10px 20px',
-                backgroundColor: '#e0e0e0',
-                borderRadius: '8px',
-                boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              Score: {submissionResult}%
-            </Typography>
           </Box>
+          <Divider sx={{ mb: 3 }} />
+          <TableContainer component={Paper}>
+            <Table>
+              <TableBody>
+                {quiz?.questions.map((question) => {
+                  const studentAnswer = answers.find(ans => ans.questionId === question.id)?.answerText;
+                  const correctAnswer = correctAnswers[question.id];
+                  return (
+                    <TableRow key={question.id}>
+                      <TableCell>
+                        <Typography variant="h6" color="#2a2a3b">
+                          {question.text}
+                        </Typography>
+                        <RadioGroup value={studentAnswer || ''}>
+                          {question.options.map((option) => {
+                            const isCorrect = option.text === correctAnswer;
+                            const isSelected = option.text === studentAnswer;
+                            return (
+                              <StyledFormControlLabel
+                                key={option.id}
+                                value={option.text}
+                                control={<Radio />}
+                                label={option.text}
+                                isSelected={isSelected}
+                                isCorrect={isCorrect}
+                                sx={{
+                                  backgroundColor: isSelected
+                                    ? isCorrect
+                                      ? 'rgba(76, 175, 80, 0.1)' // Green background for correct answer
+                                      : 'rgba(244, 67, 54, 0.1)' // Red background for incorrect answer
+                                    : 'inherit',
+                                }}
+                              />
+                            );
+                          })}
+                        </RadioGroup>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </>
       ) : (
         <>
@@ -206,19 +250,19 @@ const TakeQuizPage = () => {
                           fullWidth
                           multiline
                           rows={3}
-                          value={answers[question.id] || ''}
+                          value={answers.find(ans => ans.questionId === question.id)?.answerText || ''}
                           onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
                           sx={{ mb: 2 }}
                         />
                       ) : (
                         <RadioGroup
-                          value={answers[question.id] || ''}
+                          value={answers.find(ans => ans.questionId === question.id)?.answerText || ''}
                           onChange={(e) => handleOptionChange(question.id, e.target.value)}
                         >
                           {question.options.map((option) => (
-                            <FormControlLabel
+                            <StyledFormControlLabel
                               key={option.id}
-                              value={option.id}
+                              value={option.text}
                               control={<Radio />}
                               label={option.text}
                             />
