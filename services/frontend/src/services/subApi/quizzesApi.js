@@ -25,16 +25,29 @@ export const addQuizToModule = async (quizData) => {
 };
 
 // Fetch quizzes by student in a course
-export const fetchQuizzesByStudentInCourse = async (courseId) => {
-  try {
-    console.log('Fetching quizzes by student in course:', courseId);
-    const response = await axios.get(`${API_BASE_URL}/quizzes/course/${courseId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching quizzes by student in course:', error);
-    return [];
-  }
-};
+// export const fetchQuizzesByStudentInCourse = async (courseId, studentId) => {
+//     console.log('Fetching quizzes by student in course:', courseId);
+//   try {
+//     console.log('Fetching quizzes by student in course:', courseId);
+//     const response = await axios.get(`${API_BASE_URL}/quizzes/course/${courseId}`);
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error fetching quizzes by student in course:', error);
+//     return [];
+//   }
+// };
+
+export const fetchQuizzesByStudentInCourse = async (courseId, studentId) => {
+    console.log('Fetching quizzes by student in course:', courseId, studentId);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/quizzes/course/${courseId}/student/${studentId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quizzes by student in course:', error);
+      return [];
+    }
+  };
+  
 
 // Fetch a quiz by ID
 export const fetchQuizById = async (quizId) => {
@@ -75,6 +88,7 @@ export const submitQuiz = async (quizId, studentId, answers) => {
 
 // Fetch student quiz results
 export const fetchStudentQuizResults = async (quizId, studentId) => {
+    console.log('Fetching student quiz results:', { quizId, studentId });
   try {
     const response = await axios.get(`${API_BASE_URL}/quizzes/${quizId}/results`, {
       params: { student_id: studentId }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Button, TextField, Typography, Paper } from '@mui/material';
 import { validateTeacherLogin } from '../../services/fakeApi'; // Adjust path if needed
+import Cookies from 'js-cookie';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -16,12 +17,15 @@ const Login = ({ onLogin }) => {
       console.log('Login response:', response);
 
       if (response && response.message === 'Login successful') {
-        const { sessionToken } = response;
-        console.log('Session Token:', sessionToken);
+        const { sessionToken, teacher } = response;
 
-        // Use the sessionToken for further operations
-        onLogin(sessionToken);
-        localStorage.setItem('sessionToken', sessionToken);
+        // Store the session token and teacher ID in cookies
+        Cookies.set('sessionToken', sessionToken);
+        Cookies.set('teacher_id', teacher.id);
+
+        // Pass the teacher ID to the parent component's login handler
+        console.log(`Logged in successfully with teacher ID: ${teacher.id}`);
+        onLogin(teacher.id);
 
         console.log(`Logged in successfully with token: ${sessionToken}`);
       } else {
@@ -64,7 +68,7 @@ const Login = ({ onLogin }) => {
             marginBottom: '0.5rem',
             borderBottom: '1px solid #ccc',
             borderTopLeftRadius: 15,
-            borderTopRightRadius: 15
+            borderTopRightRadius: 15,
           }}
         >
           <Typography

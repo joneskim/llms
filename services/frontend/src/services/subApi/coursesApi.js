@@ -6,6 +6,8 @@ const API_BASE_URL = 'http://localhost:8000';
 export const fetchCoursesByTeacherId = async (teacherId) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/courses/teacher/${teacherId}`);
+    console.log('teacherId:', teacherId);
+    console.log('response:', response);
     return response.data;
   } catch (error) {
     console.error('Error fetching courses by teacher ID:', error);
@@ -75,3 +77,15 @@ export const fetchModulesByCourseId = async (courseId) => {
     return [];
   }
 };
+
+export const fetchAllQuizResultsForCourse = async (courseId) => {
+    console.log('Fetching all quiz results for course:', courseId);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/courses/${courseId}/results`);
+      console.log('Quiz results:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching all quiz results for course:', error);
+      return [];
+    }
+  };

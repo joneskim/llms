@@ -22,36 +22,72 @@ import {
 } from '@mui/material';
 import { fetchQuizById, submitQuiz, fetchStudentQuizResults } from '../services/fakeApi';
 
-const StyledFormControlLabel = styled(FormControlLabel)(({ theme, isSelected, isCorrect }) => ({
-  '.MuiRadio-root': {
-    color: isSelected ? (isCorrect ? theme.palette.success.main : theme.palette.error.main) : 'inherit',
-  },
-  color: isSelected ? (isCorrect ? theme.palette.success.main : theme.palette.error.main) : 'inherit',
-  border: isSelected ? `1px solid ${isCorrect ? theme.palette.success.main : theme.palette.error.main}` : 'none',
+// Custom styled components
+const StyledFormControlLabel = styled(FormControlLabel)(({ theme }) => ({
   borderRadius: '8px',
   padding: '8px 16px',
   marginBottom: '8px',
-  backgroundColor: isSelected ? (isCorrect ? theme.palette.success.light : theme.palette.error.light) : 'inherit',
+  transition: 'background-color 0.3s ease',
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
+const ScoreBox = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.success.main,
+  color: theme.palette.common.white,
+  padding: theme.spacing(4),
+  borderRadius: '16px',
+  textAlign: 'center',
+  boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
+  position: 'relative',
+  overflow: 'hidden',
+  marginBottom: theme.spacing(4),
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: '-20px',
+    left: '-20px',
+    width: '100px',
+    height: '100px',
+    backgroundColor: theme.palette.secondary.main,
+    borderRadius: '50%',
+    opacity: 0.3,
+    filter: 'blur(15px)',
+    zIndex: 1,
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    bottom: '-20px',
+    right: '-20px',
+    width: '100px',
+    height: '100px',
+    backgroundColor: theme.palette.secondary.main,
+    borderRadius: '50%',
+    opacity: 0.3,
+    filter: 'blur(15px)',
+    zIndex: 1,
+  },
 }));
 
 const TakeQuizPage = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { student } = location.state || {}; // Ensure this is passed from the previous page
+  const { student } = location.state || {};
   const [quiz, setQuiz] = useState(null);
-  const [answers, setAnswers] = useState([]);
+  const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [initialCountdown, setInitialCountdown] = useState(5); // Initial countdown in seconds
-  const [quizCountdown, setQuizCountdown] = useState(null); // Quiz countdown in seconds
+  const [quizCountdown, setQuizCountdown] = useState(null);
   const [submissionResult, setSubmissionResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [correctAnswers, setCorrectAnswers] = useState({}); // State to store correct answers
+  const [correctAnswers, setCorrectAnswers] = useState({});
 
   useEffect(() => {
     if (!student) {
-      navigate('/'); // Redirect to home or a relevant page if student info is missing
+      navigate('/');
     }
   }, [student, navigate]);
 
@@ -64,12 +100,16 @@ const TakeQuizPage = () => {
         const result = await fetchStudentQuizResults(quizId, student.id);
         if (result) {
           setCorrectAnswers(result.correctAnswers || {});
-          setAnswers(result.answers || []); // Load the student's previous answers
+          const initialAnswers = result.answers.reduce((acc, answer) => {
+            acc[answer.questionId] = answer.answerText;
+            return acc;
+          }, {});
+          setAnswers(initialAnswers);
           const percentage = (result.score / fetchedQuiz.questions.length) * 100;
           setSubmissionResult(percentage);
           setQuizCompleted(true);
         } else {
-          const initialTime = fetchedQuiz.quiz_length ? fetchedQuiz.quiz_length * 60 : 300; // Default to 5 minutes if not set
+          const initialTime = fetchedQuiz.quiz_length ? fetchedQuiz.quiz_length * 60 : 300;
           setQuizCountdown(initialTime);
         }
 
@@ -84,34 +124,25 @@ const TakeQuizPage = () => {
   }, [quizId, student.id]);
 
   useEffect(() => {
-    if (!quizCompleted && initialCountdown > 0) {
-      const countdownTimer = setInterval(() => {
-        setInitialCountdown(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(countdownTimer);
-    }
-  }, [initialCountdown, quizCompleted]);
-
-  useEffect(() => {
-    if (initialCountdown === 0 && !quizCompleted && quizCountdown > 0) {
+    if (quizCountdown > 0 && !quizCompleted) {
       const quizTimer = setInterval(() => {
-        setQuizCountdown(prev => prev - 1);
+        setQuizCountdown((prev) => prev - 1);
       }, 1000);
       return () => clearInterval(quizTimer);
     } else if (quizCountdown === 0 && !quizCompleted) {
-      handleSubmit(); // Automatically submit when quiz countdown reaches zero
+      handleSubmit();
     }
-  }, [quizCountdown, initialCountdown, quizCompleted]);
+  }, [quizCountdown, quizCompleted]);
 
   const handleOptionChange = (questionId, optionText) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
       [questionId]: optionText,
     }));
   };
 
   const handleTextAnswerChange = (questionId, value) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
     }));
@@ -124,11 +155,11 @@ const TakeQuizPage = () => {
     }
 
     try {
-      const result = await submitQuiz(quiz.id, student.id, answers);
-      setCorrectAnswers(result.correctAnswers || {}); // Safeguard against undefined correctAnswers
+      await submitQuiz(quiz.id, student.id, answers);
+      const result = await fetchStudentQuizResults(quizId, student.id);
+      setCorrectAnswers(result.correctAnswers || {});
 
       const percentage = (result.score / quiz.questions.length) * 100;
-
       setSubmissionResult(percentage);
       setQuizCompleted(true);
     } catch (err) {
@@ -144,9 +175,11 @@ const TakeQuizPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
+      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem', textAlign: 'center' }}>
         <CircularProgress />
-        <Typography>Loading...</Typography>
+        <Typography variant="h6" sx={{ marginTop: 2 }}>
+          Loading...
+        </Typography>
       </Container>
     );
   }
@@ -165,16 +198,22 @@ const TakeQuizPage = () => {
       sx={{
         marginTop: '2rem',
         padding: '2rem',
-        borderRadius: '8px',
-        backgroundColor: '#f4f4f9',
+        borderRadius: '12px',
+        backgroundColor: '#f9f9fb',
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
       }}
     >
       {quizCompleted ? (
         <>
-          {submissionResult && (
-            <Alert severity="success" sx={{ mt: 3 }}>
-              {`Your score: ${submissionResult}%`}
-            </Alert>
+          {submissionResult !== null && (
+            <ScoreBox>
+              <Typography variant="h3" fontWeight="bold" sx={{ zIndex: 2, position: 'relative' }}>
+                {submissionResult}%
+              </Typography>
+              <Typography variant="h6" sx={{ zIndex: 2, position: 'relative', marginTop: 1 }}>
+                Your Score
+              </Typography>
+            </ScoreBox>
           )}
           <Box display="flex" justifyContent="space-between" alignItems="center" mt={3} mb={2}>
             <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
@@ -182,37 +221,38 @@ const TakeQuizPage = () => {
             </Typography>
           </Box>
           <Divider sx={{ mb: 3 }} />
-          <TableContainer component={Paper}>
+          <TableContainer component={Paper} sx={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: 'none' }}>
             <Table>
               <TableBody>
                 {quiz?.questions.map((question) => {
-                  const studentAnswer = answers.find(ans => ans.questionId === question.id)?.answerText;
-                  const correctAnswer = correctAnswers[question.id];
+                  const studentAnswer = answers[question.id] || 'Option not found';
+                  const correctAnswerArray = correctAnswers[question.id] || [];
+                  const correctAnswer = correctAnswerArray.length > 0 ? correctAnswerArray[0].answerText : '';
+
                   return (
                     <TableRow key={question.id}>
                       <TableCell>
-                        <Typography variant="h6" color="#2a2a3b">
+                        <Typography variant="h6" color="#2a2a3b" fontWeight="bold" gutterBottom>
                           {question.text}
                         </Typography>
                         <RadioGroup value={studentAnswer || ''}>
                           {question.options.map((option) => {
                             const isCorrect = option.text === correctAnswer;
                             const isSelected = option.text === studentAnswer;
+                            const bgColor = isSelected
+                              ? isCorrect
+                                ? 'rgba(76, 175, 80, 0.1)' // Green for correct answer
+                                : 'rgba(244, 67, 54, 0.1)' // Red for incorrect answer
+                              : isCorrect
+                              ? 'rgba(76, 175, 80, 0.1)' // Green for correct answer
+                              : 'inherit';
                             return (
                               <StyledFormControlLabel
                                 key={option.id}
                                 value={option.text}
                                 control={<Radio />}
                                 label={option.text}
-                                isSelected={isSelected}
-                                isCorrect={isCorrect}
-                                sx={{
-                                  backgroundColor: isSelected
-                                    ? isCorrect
-                                      ? 'rgba(76, 175, 80, 0.1)' // Green background for correct answer
-                                      : 'rgba(244, 67, 54, 0.1)' // Red background for incorrect answer
-                                    : 'inherit',
-                                }}
+                                sx={{ backgroundColor: bgColor }}
                               />
                             );
                           })}
@@ -236,13 +276,13 @@ const TakeQuizPage = () => {
             </Typography>
           </Box>
           <Divider sx={{ mb: 3 }} />
-          <TableContainer component={Paper}>
+          <TableContainer component={Paper} sx={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: 'none' }}>
             <Table>
               <TableBody>
                 {quiz?.questions.map((question) => (
                   <TableRow key={question.id}>
                     <TableCell>
-                      <Typography variant="h6" color="#2a2a3b">
+                      <Typography variant="h6" color="#2a2a3b" fontWeight="bold" gutterBottom>
                         {question.text}
                       </Typography>
                       {question.type === 'text' ? (
@@ -250,13 +290,13 @@ const TakeQuizPage = () => {
                           fullWidth
                           multiline
                           rows={3}
-                          value={answers.find(ans => ans.questionId === question.id)?.answerText || ''}
+                          value={answers[question.id] || ''}
                           onChange={(e) => handleTextAnswerChange(question.id, e.target.value)}
                           sx={{ mb: 2 }}
                         />
                       ) : (
                         <RadioGroup
-                          value={answers.find(ans => ans.questionId === question.id)?.answerText || ''}
+                          value={answers[question.id] || ''}
                           onChange={(e) => handleOptionChange(question.id, e.target.value)}
                         >
                           {question.options.map((option) => (
@@ -276,11 +316,7 @@ const TakeQuizPage = () => {
             </Table>
           </TableContainer>
           <Box display="flex" justifyContent="flex-end" mt={3}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-            >
+            <Button variant="contained" color="primary" onClick={handleSubmit}>
               Submit
             </Button>
           </Box>

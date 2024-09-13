@@ -17,30 +17,35 @@ import { CssBaseline } from '@mui/material';
 import TopBar from './components/Layout/TopBar';
 import TypingTest from './pages/TypingAssignment';
 import StudentTaskAccessPage from './pages/StudentTasksPage';
+import Cookies from 'js-cookie';
 
 const App = () => {
   const [teacherId, setTeacherId] = useState(null);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
 
   useEffect(() => {
-    const storedTeacherId = localStorage.getItem('teacher_id');
+    // Retrieve the teacherId from cookies
+    const storedTeacherId = Cookies.get('teacher_id');
+    console.log('storedTeacherId:', storedTeacherId);
     if (storedTeacherId) {
-      setTeacherId(Number(storedTeacherId));
+      setTeacherId(storedTeacherId); // No need to convert since it's a string
     }
 
     const storedCourseId = localStorage.getItem('selected_course_id');
     if (storedCourseId) {
-      setSelectedCourseId(Number(storedCourseId));
+      setSelectedCourseId(storedCourseId); // Assuming course ID is also a string
     }
   }, []);
 
   const handleLogin = (id) => {
     setTeacherId(id);
-    localStorage.setItem('teacher_id', id);
+    Cookies.set('teacher_id', id); // Store teacher ID in cookies
   };
 
+  console.log('teacherId:', teacherId);
+
   const handleLogout = () => {
-    localStorage.removeItem('teacher_id');
+    Cookies.remove('teacher_id');
     localStorage.removeItem('selected_course_id');
     setTeacherId(null);
     setSelectedCourseId(null);

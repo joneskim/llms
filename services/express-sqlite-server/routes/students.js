@@ -81,6 +81,25 @@ router.get('/uniqueId/:uniqueId', async (req, res) => {
       res.status(400).json({ error: error.message });
     }
   });
+
+  router.get('/course/:courseId', async (req, res) => {
+    try {
+      const courseId = req.params.courseId;
   
+      // Fetch the course along with its students
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        include: { students: true },
+      });
+  
+      if (!course || course.students.length === 0) {
+        return res.status(404).json({ error: 'No students found for this course' });
+      }
+  
+      res.json(course.students);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
 
 module.exports = router;

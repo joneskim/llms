@@ -22,7 +22,7 @@ router.post('/login', async (req, res) => {
 
     // Store the token and associate it with the user (optional, depends on your needs)
 
-    res.json({ message: 'Login successful', sessionToken });
+    res.json({ message: 'Login successful', teacherId: user.id, session_token: sessionToken });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

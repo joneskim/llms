@@ -27,13 +27,14 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [error, setError] = useState(null);
-  const [events, setEvents] = useState([]); // Events array for calendar events
+  const [events, setEvents] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const loadCoursesAndEvents = async () => {
+      if (!teacherId) return;
+
       try {
-        // Fetch all courses for the teacher
         const coursesData = await fetchCoursesByTeacherId(teacherId);
         setCourses(coursesData);
 
@@ -44,7 +45,6 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
         for (const [courseIndex, courseModules] of modulesData.entries()) {
           const course = coursesData[courseIndex];
 
-          // Fetch all quizzes and assignments for the course's modules
           const quizzesPromises = courseModules.map(module => fetchQuizzesByModuleId(module.id));
           const assignmentsPromises = courseModules.map(module => fetchAssignmentsByModuleId(course.id, module.id));
 
@@ -53,12 +53,11 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
             Promise.all(assignmentsPromises)
           ]);
 
-          // Flatten arrays and create events
           quizzesData.flat().forEach(quiz => {
             allEvents.push({
               title: `Quiz: ${quiz.quiz_name}`,
-              start: quiz.startDate, // Use actual start date
-              end: quiz.dueDate, // Use actual due date
+              start: quiz.startDate,
+              end: quiz.dueDate,
               color: '#3e95cd',
             });
           });
@@ -66,14 +65,14 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
           assignmentsData.flat().forEach(assignment => {
             allEvents.push({
               title: `Assignment: ${assignment.assignment_name}`,
-              start: assignment.startDate, // Use actual start date
-              end: assignment.dueDate, // Use actual due date
+              start: assignment.startDate,
+              end: assignment.dueDate,
               color: '#ffa726',
             });
           });
         }
 
-        setEvents(allEvents); // Set the events state with all the collected events
+        setEvents(allEvents);
       } catch (err) {
         setError('Failed to load courses.');
       } finally {
@@ -84,15 +83,13 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
     loadCoursesAndEvents();
   }, [teacherId]);
 
-  const handleCourseSelect = (courseId) => {
+  const handleCourseSelect = (courseId, courseName) => {
     onCourseSelect(courseId);
-    navigate(`/course/${courseId}/overview`, { state: { courseId } });
-  };
 
-  const handleLogout = () => {
-    localStorage.removeItem('teacher_id');
-    onLogout();
-    navigate('/login');
+    localStorage.setItem('selectedCourseId', courseId);
+    localStorage.setItem('selectedCourseName', courseName);
+    
+    navigate(`/course/${courseId}/overview`, { state: { courseId, courseName } });
   };
 
   if (loadingCourses) {
@@ -122,7 +119,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
           variant="outlined"
           color="secondary"
           startIcon={<LogoutIcon />}
-          onClick={handleLogout}
+          onClick={onLogout}
           sx={{ color: '#1e1e2f', borderColor: '#1e1e2f' }}
         >
           Logout
@@ -161,7 +158,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                   size="medium"
                   variant="contained"
                   color="primary"
-                  onClick={() => handleCourseSelect(course.id)}
+                  onClick={() => handleCourseSelect(course.id, course.course_name)}
                   sx={{
                     backgroundColor: '#1e1e2f',
                     borderRadius: '10px',
@@ -197,7 +194,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
-          events={events} // Use the events state here
+          events={events}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',

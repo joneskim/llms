@@ -38,6 +38,7 @@ export {
     fetchModuleById,
     fetchModulesByCourseId,
     fetchCoursesByStudentId, // Ensure this is exported
+    fetchAllQuizResultsForCourse
   } from './subApi/coursesApi';
   
   export { validateTeacherLogin } from './subApi/loginApi';

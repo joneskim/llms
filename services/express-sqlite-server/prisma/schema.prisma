@@ -96,6 +96,7 @@ model Quiz {
   description String?
   moduleId    String
   module      Module    @relation(fields: [moduleId], references: [id])
+  averageScore Float?
   results     StudentQuizResult[]
   questions   Question[]  // Added relation
   createdAt   DateTime  @default(now())

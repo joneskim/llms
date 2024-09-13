@@ -134,17 +134,17 @@ router.post('/:quizId/submit', async (req, res) => {
 
         let score = 0;
 
+
+
         // Calculate score based on the answers
         for (const question of questions) {
             console.log('Question:', question);
             const correctAnswer = question.correctAnswer[0]?.answerText;
             console.log('Correct answer:', correctAnswer);
             const studentAnswer = answers[question.id];
-            const studentAnswerOption = question.options.find(option => option.id === studentAnswer)?.text;
-            console.log('Student answer option:', studentAnswerOption);
             console.log('Student answer:', studentAnswer);
 
-            if (correctAnswer === studentAnswerOption) {
+            if (correctAnswer === studentAnswer) {
                 score += 1; // Increment score for correct answer
             }
         }
@@ -170,6 +170,20 @@ router.post('/:quizId/submit', async (req, res) => {
         });
 
         console.log('Quiz result:', quizResult);
+
+        const quizResults = await prisma.studentQuizResult.findMany({
+            where: { quizId: quizId },
+          });
+      
+          const totalScore = quizResults.reduce((sum, result) => sum + result.score, 0);
+          const averageScore = totalScore / quizResults.length;
+      
+          // Update the quiz with the new average score
+          await prisma.quiz.update({
+            where: { id: quizId },
+            data: { averageScore: averageScore },
+          });
+
 
         res.status(201).json(quizResult);
     } catch (error) {
@@ -227,29 +241,28 @@ router.get('/:quizId/results', async (req, res) => {
         // Prepare the correct answers
         const correctAnswers = {};
         quiz.questions.forEach(question => {
-            const correctAnswer = question.correctAnswer[0]?.answerText;
+            const correctAnswer = question.correctAnswer;
             correctAnswers[question.id] = correctAnswer;
             console.log('Correct answer:', correctAnswer);
         });
 
-        // now fetch answer with id answerText.. answerText is apparently the id of the answer.. fetch the option with that id
-        const answers = studentResults[0].answers;
-        for (const answer of answers) {
-            const answerText = answer.answerText;
-            const option = quiz.questions.find(question => question.id === answer.questionId).options.find(option => option.id === answerText);
-            answer.answerText = option.text;
-        }
-        
+        // Map answerText (which holds the ID of the chosen option) to the actual text
+        const answers = studentResults[0].answers.map(answer => {
+            const question = quiz.questions.find(q => q.id === answer.questionId);
+            const option = question?.options.find(option => option.text === answer.answerText);
+            console.log('Option:', option);
+            return {
+                ...answer,
+                answerText: option ? option.text : 'Option not found',
+            };
+        });
 
         const score = studentResults[0].score;
-        console.log('Student score:', score);
-        console.log('Correct answers:', correctAnswers);
-        console.log('Student answers:', studentResults[0].answers); 
 
         res.json({
             score: score,
             correctAnswers: correctAnswers,
-            answers: studentResults[0].answers,
+            answers: answers,
         });
 
     } catch (error) {
@@ -257,6 +270,7 @@ router.get('/:quizId/results', async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching quiz results' });
     }
 });
+
 
   
 
@@ -306,6 +320,101 @@ router.get('/course/:courseId', async (req, res) => {
       // (e.g., quizzes = quizzes.filter(quiz => quiz.someCondition))
   
       res.json(quizzes);
+    } catch (error) {
+      console.error('Error fetching quizzes:', error);
+      res.status(500).json({ error: 'An error occurred while fetching quizzes' });
+    }
+  });
+
+  
+
+//   router.get('/course/:courseId/student/:studentId', async (req, res) => {
+//     try {
+//       const { courseId, studentId } = req.params;
+  
+//       // Fetch modules related to the course with included quizzes
+//       const modules = await prisma.module.findMany({
+//         where: { courseId: courseId },
+//         include: {
+//           quizzes: {
+//             include: {
+//               questions: {
+//                 include: {
+//                   options: true
+//                 }
+//               },
+//               results: {
+//                 where: { studentId: studentId }, // Filter results by studentId
+//               }
+//             }
+//           }
+//         }
+//       });
+  
+//       if (modules.length === 0) {
+//         return res.status(404).json({ error: 'No modules found for this course' });
+//       }
+  
+//       // get the quiz results for the student
+//         const quizResults = modules.flatMap(module => module.quizzes).flatMap(quiz => quiz.results);
+
+//         console.log('Quiz results:', quizResults);
+//       // now calculate the percentage score for each quiz
+//         // and return the results
+        
+
+//       res.json(quizResults);
+//     } catch (error) {
+//       console.error('Error fetching quizzes:', error);
+//       res.status(500).json({ error: 'An error occurred while fetching quizzes' });
+//     }
+//   });
+  
+router.get('/course/:courseId/student/:studentId', async (req, res) => {
+    try {
+      const { courseId, studentId } = req.params;
+  
+      // Fetch modules related to the course with included quizzes
+      const modules = await prisma.module.findMany({
+        where: { courseId: courseId },
+        include: {
+          quizzes: {
+            include: {
+              questions: {
+                include: {
+                  options: true,
+                },
+              },
+              results: {
+                where: { studentId: studentId }, // Filter results by studentId
+              },
+            },
+          },
+        },
+      });
+  
+      if (modules.length === 0) {
+        return res.status(404).json({ error: 'No modules found for this course' });
+      }
+  
+      // Get the quiz results for the student and calculate percentage scores
+      const quizResults = modules.flatMap(module => module.quizzes).map(quiz => {
+        const studentResult = quiz.results[0]; // Assuming one result per student per quiz
+        const totalQuestions = quiz.questions.length;
+        const score = studentResult ? studentResult.score : 0;
+        const percentageScore = (totalQuestions > 0) ? Math.round((score / totalQuestions) * 100) : 0;
+  
+        return {
+          quizId: quiz.id,
+          quizName: quiz.quiz_name,
+          score: studentResult ? studentResult.score : null,
+          percentageScore: percentageScore,
+        };
+      });
+  
+      console.log('Quiz results with percentage scores:', quizResults);
+  
+      res.json(quizResults);
     } catch (error) {
       console.error('Error fetching quizzes:', error);
       res.status(500).json({ error: 'An error occurred while fetching quizzes' });
