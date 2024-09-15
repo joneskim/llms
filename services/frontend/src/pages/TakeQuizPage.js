@@ -22,19 +22,14 @@ import {
 } from '@mui/material';
 import { fetchQuizById, submitQuiz, fetchStudentQuizResults } from '../services/fakeApi';
 
-// Custom styled components
 const StyledFormControlLabel = styled(FormControlLabel)(({ theme }) => ({
   borderRadius: '8px',
   padding: '8px 16px',
   marginBottom: '8px',
-  transition: 'background-color 0.3s ease',
-  '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-  },
 }));
 
 const ScoreBox = styled(Box)(({ theme }) => ({
-  backgroundColor: theme.palette.success.main,
+  backgroundColor: theme.palette.primary.dark,
   color: theme.palette.common.white,
   padding: theme.spacing(4),
   borderRadius: '16px',
@@ -42,7 +37,6 @@ const ScoreBox = styled(Box)(({ theme }) => ({
   boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
   position: 'relative',
   overflow: 'hidden',
-  marginBottom: theme.spacing(4),
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -69,6 +63,18 @@ const ScoreBox = styled(Box)(({ theme }) => ({
     filter: 'blur(15px)',
     zIndex: 1,
   },
+  '&::before, &::after': {
+    animation: 'pulse 3s infinite ease-in-out',
+  },
+  '@keyframes pulse': {
+    '0%': { transform: 'scale(1)' },
+    '50%': { transform: 'scale(1.1)' },
+    '100%': { transform: 'scale(1)' },
+  },
+  '& .score-content': {
+    position: 'relative',
+    zIndex: 2,
+  },
 }));
 
 const TakeQuizPage = () => {
@@ -80,6 +86,7 @@ const TakeQuizPage = () => {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [initialCountdown, setInitialCountdown] = useState(5);
   const [quizCountdown, setQuizCountdown] = useState(null);
   const [submissionResult, setSubmissionResult] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
@@ -124,7 +131,16 @@ const TakeQuizPage = () => {
   }, [quizId, student.id]);
 
   useEffect(() => {
-    if (quizCountdown > 0 && !quizCompleted) {
+    if (!quizCompleted && initialCountdown > 0) {
+      const countdownTimer = setInterval(() => {
+        setInitialCountdown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(countdownTimer);
+    }
+  }, [initialCountdown, quizCompleted]);
+
+  useEffect(() => {
+    if (initialCountdown === 0 && !quizCompleted && quizCountdown > 0) {
       const quizTimer = setInterval(() => {
         setQuizCountdown((prev) => prev - 1);
       }, 1000);
@@ -132,7 +148,7 @@ const TakeQuizPage = () => {
     } else if (quizCountdown === 0 && !quizCompleted) {
       handleSubmit();
     }
-  }, [quizCountdown, quizCompleted]);
+  }, [quizCountdown, initialCountdown, quizCompleted]);
 
   const handleOptionChange = (questionId, optionText) => {
     setAnswers((prev) => ({
@@ -156,12 +172,16 @@ const TakeQuizPage = () => {
 
     try {
       await submitQuiz(quiz.id, student.id, answers);
+      // setCorrectAnswers(result.correctAnswers || {});
+      // call fetchStudentQuizResults to get the correct answers
       const result = await fetchStudentQuizResults(quizId, student.id);
       setCorrectAnswers(result.correctAnswers || {});
 
       const percentage = (result.score / quiz.questions.length) * 100;
+
       setSubmissionResult(percentage);
       setQuizCompleted(true);
+      // window.location.reload();
     } catch (err) {
       setError('Failed to submit the quiz.');
     }
@@ -175,11 +195,9 @@ const TakeQuizPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem', textAlign: 'center' }}>
+      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
         <CircularProgress />
-        <Typography variant="h6" sx={{ marginTop: 2 }}>
-          Loading...
-        </Typography>
+        <Typography>Loading...</Typography>
       </Container>
     );
   }
@@ -205,15 +223,13 @@ const TakeQuizPage = () => {
     >
       {quizCompleted ? (
         <>
-          {submissionResult !== null && (
+          {submissionResult && (
             <ScoreBox>
-              <Typography variant="h3" fontWeight="bold" sx={{ zIndex: 2, position: 'relative' }}>
-                {submissionResult}%
-              </Typography>
-              <Typography variant="h6" sx={{ zIndex: 2, position: 'relative', marginTop: 1 }}>
-                Your Score
-              </Typography>
-            </ScoreBox>
+            <Typography variant="h3" fontWeight="bold" sx={{ zIndex: 2, position: 'relative' }}>
+              {submissionResult}%
+            </Typography>
+
+          </ScoreBox>
           )}
           <Box display="flex" justifyContent="space-between" alignItems="center" mt={3} mb={2}>
             <Typography variant="h4" color="#2a2a3b" fontWeight="bold">
@@ -221,7 +237,7 @@ const TakeQuizPage = () => {
             </Typography>
           </Box>
           <Divider sx={{ mb: 3 }} />
-          <TableContainer component={Paper} sx={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: 'none' }}>
+          <TableContainer component={Paper}>
             <Table>
               <TableBody>
                 {quiz?.questions.map((question) => {
@@ -276,7 +292,7 @@ const TakeQuizPage = () => {
             </Typography>
           </Box>
           <Divider sx={{ mb: 3 }} />
-          <TableContainer component={Paper} sx={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: 'none' }}>
+          <TableContainer component={Paper}>
             <Table>
               <TableBody>
                 {quiz?.questions.map((question) => (
@@ -316,7 +332,11 @@ const TakeQuizPage = () => {
             </Table>
           </TableContainer>
           <Box display="flex" justifyContent="flex-end" mt={3}>
-            <Button variant="contained" color="primary" onClick={handleSubmit}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+            >
               Submit
             </Button>
           </Box>

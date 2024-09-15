@@ -1,171 +1,246 @@
+// components/Login.js
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper } from '@mui/material';
-import { validateTeacherLogin } from '../../services/fakeApi'; // Adjust path if needed
-import Cookies from 'js-cookie';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Paper,
+  Grid,
+  InputAdornment,
+  IconButton,
+  Checkbox,
+  FormControlLabel,
+  Alert,
+  CircularProgress,
+  Tooltip,
+} from '@mui/material';
+import { styled } from '@mui/system';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { validateTeacherLogin } from '../../services/fakeApi'; // Adjust the path as needed
+import { useNavigate } from 'react-router-dom';
+
+// Styled Components
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(6),
+  maxWidth: 400,
+  width: '100%',
+  borderRadius: theme.spacing(2),
+  boxShadow: '0 4px 30px rgba(0,0,0,0.1)',
+  backgroundColor: '#1e1e2f',
+  color: '#ffffff',
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(3),
+  padding: theme.spacing(1.5),
+  borderRadius: theme.spacing(1),
+  backgroundColor: '#3f51b5',
+  color: '#ffffff',
+  fontWeight: 600,
+  fontSize: '1rem',
+  '&:hover': {
+    backgroundColor: '#303f9f',
+  },
+}));
+
+const HeaderBox = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+  textAlign: 'center',
+}));
+
+const InputField = styled(TextField)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: '#555',
+    },
+    '&:hover fieldset': {
+      borderColor: '#3f51b5',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#3f51b5',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#ccc',
+  },
+  '& .MuiInputLabel-root.Mui-focused': {
+    color: '#fff',
+  },
+  '& .MuiOutlinedInput-input': {
+    color: '#fff',
+  },
+}));
 
 const Login = ({ onLogin }) => {
+  // State Management
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const navigate = useNavigate();
+
+  // Handler for login submission
   const handleLogin = async () => {
-    try {
-      // Call the API with both username and password
-      const response = await validateTeacherLogin(username, password);
+    setError('');
 
-      // Log the API response to inspect the structure
+    // Basic client-side validation
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await validateTeacherLogin(username, password);
       console.log('Login response:', response);
 
-      if (response && response.message === 'Login successful') {
-        const { sessionToken, teacher } = response;
+      if (response && response.session_token && response.teacherId) {
+        // Successful login
+        if (onLogin) {
+          onLogin(response.teacherId);
+        }
+        console.log(`Logged in successfully with teacher ID: ${response.teacherId}`);
 
-        // Store the session token and teacher ID in cookies
-        Cookies.set('sessionToken', sessionToken);
-        Cookies.set('teacher_id', teacher.id);
-
-        // Pass the teacher ID to the parent component's login handler
-        console.log(`Logged in successfully with teacher ID: ${teacher.id}`);
-        onLogin(teacher.id);
-
-        console.log(`Logged in successfully with token: ${sessionToken}`);
+        // Redirect to dashboard or desired page
+        navigate('/dashboard');
       } else {
-        setError('Login failed: Incorrect credentials or server error.');
+        // Handle login failure
+        setError(response.message || 'Login failed: Incorrect credentials.');
       }
     } catch (err) {
       console.error('Error during login:', err);
       setError('An error occurred during login. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // Handler for form submission via Enter key
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
+
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
+    <Grid
+      container
       justifyContent="center"
-      minHeight="100vh"
-      padding={0}
-      sx={{ backgroundColor: '#f7f9fc' }}
+      alignItems="center"
+      sx={{ minHeight: '100vh', backgroundColor: '#121212' }}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          width: '30%',
-          borderRadius: 0,
-          backgroundColor: '#ffffff',
-          boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          borderRadius: 5,
-        }}
-      >
-        <Box
-          sx={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#2a2a3b',
-            textAlign: 'center',
-            marginBottom: '0.5rem',
-            borderBottom: '1px solid #ccc',
-            borderTopLeftRadius: 15,
-            borderTopRightRadius: 15,
-          }}
-        >
+      <StyledPaper elevation={3}>
+        <HeaderBox>
           <Typography
-            variant="h5"
+            variant="h4"
+            component="h1"
             sx={{
-              color: '#ffffff',
               fontFamily: 'Poppins, sans-serif',
-              fontWeight: '600',
-              letterSpacing: '0.5px',
+              fontWeight: 700,
+              color: '#3f51b5',
             }}
           >
             Teacher Login
           </Typography>
-        </Box>
-        <TextField
+          <Typography variant="body2" sx={{ color: '#ccc', marginTop: 1 }}>
+            Welcome back! Please enter your credentials to continue.
+          </Typography>
+        </HeaderBox>
+
+        {error && (
+          <Alert severity="error" sx={{ marginBottom: 2, backgroundColor: '#f44336', color: '#fff' }}>
+            {error}
+          </Alert>
+        )}
+
+        <InputField
           label="Username"
           variant="outlined"
           fullWidth
-          margin="dense"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          sx={{
-            width: '70%',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            input: { color: '#2a2a3b' },
-            label: { color: '#555' },
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: '#ccc',
-              },
-              '&:hover fieldset': {
-                borderColor: '#888',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#2a2a3b',
-              },
-            },
-          }}
+          onKeyPress={handleKeyPress}
+          autoComplete="username"
+          aria-label="username"
         />
-        <TextField
+
+        <InputField
           label="Password"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           variant="outlined"
           fullWidth
-          margin="dense"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          sx={{
-            width: '70%',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            input: { color: '#2a2a3b' },
-            label: { color: '#555' },
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: '#ccc',
-              },
-              '&:hover fieldset': {
-                borderColor: '#888',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#2a2a3b',
-              },
-            },
+          onKeyPress={handleKeyPress}
+          autoComplete="current-password"
+          aria-label="password"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip title={showPassword ? 'Hide Password' : 'Show Password'}>
+                  <IconButton
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={togglePasswordVisibility}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
           }}
         />
-        {error && (
-          <Typography color="error" variant="body2" mt={1} align="center">
-            {error}
-          </Typography>
-        )}
-        <Button
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              color="primary"
+              sx={{ color: '#ccc', '&.Mui-checked': { color: '#3f51b5' } }}
+            />
+          }
+          label="Remember Me"
+          sx={{ color: '#ccc' }}
+        />
+
+        <StyledButton
           variant="contained"
-          onClick={handleLogin}
           fullWidth
-          sx={{
-            width: '70%',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            marginTop: '1rem',
-            marginBottom: '1rem',
-            backgroundColor: '#2a2a3b',
-            color: '#ffffff',
-            borderRadius: 10,
-            fontFamily: 'Poppins, sans-serif',
-            fontWeight: '500',
-            padding: '10px 0',
-            '&:hover': {
-              backgroundColor: '#1e1e2f',
-            },
-          }}
+          onClick={handleLogin}
+          disabled={isSubmitting}
+          aria-label="login"
         >
-          Login
-        </Button>
-      </Paper>
-    </Box>
+          {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Login'}
+        </StyledButton>
+
+        <Box mt={2} textAlign="center">
+          <Typography variant="body2" sx={{ color: '#ccc' }}>
+            Forgot your password?{' '}
+            <Button
+              variant="text"
+              color="primary"
+              size="small"
+              onClick={() => navigate('/forgot-password')}
+              sx={{ textTransform: 'none', color: '#3f51b5' }}
+              aria-label="forgot password"
+            >
+              Reset Password
+            </Button>
+          </Typography>
+        </Box>
+      </StyledPaper>
+    </Grid>
   );
 };
 

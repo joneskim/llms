@@ -32,12 +32,14 @@ model Teacher {
 
 model CorrectAnswer {
   id          String   @id @default(uuid())
-  questionId  String
+  questionId  String   @unique
   question    Question @relation(fields: [questionId], references: [id])
   answerText  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+
 
 
 
@@ -112,7 +114,7 @@ model Question {
   answers     Answer[]  // Added relation
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  correctAnswer CorrectAnswer[]
+  correctAnswer CorrectAnswer?
 }
 
 
@@ -127,16 +129,21 @@ model Option {
 }
 
 model StudentQuizResult {
-  id        String   @id @default(uuid()) // Changed from Int to UUID
-  studentId String
-  student   Student @relation(fields: [studentId], references: [id])
-  quizId    String
-  quiz      Quiz    @relation(fields: [quizId], references: [id])
-  score     Int
-  answers   Answer[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id])
+  quizId       String
+  quiz         Quiz     @relation(fields: [quizId], references: [id])
+  score        Int
+  completedAt  DateTime @default(now()) // Added field
+  answers      Answer[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, quizId], name: "studentId_quizId")
 }
+
+
 
 model Answer {
   id          String   @id @default(uuid()) // Changed from Int to UUID
