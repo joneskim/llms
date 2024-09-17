@@ -1,4 +1,3 @@
-// components/CourseManagement.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,13 +10,13 @@ import {
   CardContent,
   CardActions,
   Button,
-  useTheme,
   Paper,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
 } from '@mui/material';
+import { styled, useTheme } from '@mui/material/styles';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -30,7 +29,48 @@ import {
   fetchQuizzesByModuleId,
   fetchAssignmentsByModuleId,
   fetchNotificationsByTeacherId,
-} from '../../services/fakeApi'; // Adjust the import path as needed
+} from '../../services/fakeApi';
+
+const StyledContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(4),
+  backgroundColor: theme.palette.background.default,
+  minHeight: '100vh',
+  borderRadius: theme.shape.borderRadius * 2,
+}));
+
+const Header = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(4),
+  marginTop: theme.spacing(8), // Add this to push the header below the navbar
+}));
+
+
+const SectionTitle = styled(Typography)(({ theme }) => ({
+  fontWeight: theme.typography.fontWeightBold,
+  color: theme.palette.text.primary,
+  marginBottom: theme.spacing(2),
+}));
+
+const CourseCard = styled(Card)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: theme.palette.background.paper,
+  transition: 'transform 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+  },
+  boxShadow: 'none', // No shadows
+  border: 'none',    // No borders
+}));
+
+const CalendarContainer = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(2),
+  boxShadow: 'none', // No shadows
+  border: 'none',    // No borders
+}));
 
 const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
   const [courses, setCourses] = useState([]);
@@ -47,81 +87,81 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
       if (!teacherId) return;
 
       try {
-        // Fetch courses
-        const coursesData = await fetchCoursesByTeacherId(teacherId);
+        const [coursesData, notificationsData] = await Promise.all([
+          fetchCoursesByTeacherId(teacherId),
+          fetchNotificationsByTeacherId(teacherId),
+        ]);
         setCourses(coursesData);
-
-        // Fetch notifications
-        const notificationsData = await fetchNotificationsByTeacherId(teacherId);
         setNotifications(notificationsData);
 
         const allEvents = [];
         const deadlines = [];
 
-        // Fetch modules for each course
         const modulesPromises = coursesData.map((course) =>
           fetchModulesByCourseId(course.id)
         );
         const modulesData = await Promise.all(modulesPromises);
 
-        // Fetch quizzes and assignments for each module
-        for (const [courseIndex, courseModules] of modulesData.entries()) {
-          const course = coursesData[courseIndex];
-
+        const quizzesAndAssignmentsPromises = modulesData.map((courseModules) => {
           const quizzesPromises = courseModules.map((module) =>
             fetchQuizzesByModuleId(module.id)
           );
           const assignmentsPromises = courseModules.map((module) =>
             fetchAssignmentsByModuleId(module.id)
           );
-
-          const [quizzesData, assignmentsData] = await Promise.all([
+          return Promise.all([
             Promise.all(quizzesPromises),
             Promise.all(assignmentsPromises),
           ]);
+        });
 
-          // Process quizzes
+        const quizzesAndAssignmentsData = await Promise.all(quizzesAndAssignmentsPromises);
+
+        quizzesAndAssignmentsData.forEach(([quizzesData, assignmentsData], courseIndex) => {
+          const course = coursesData[courseIndex];
+          const courseName = course.course_name;
+
           quizzesData.flat().forEach((quiz) => {
             allEvents.push({
               title: `Quiz: ${quiz.quiz_name}`,
               start: quiz.start_date,
               end: quiz.due_date,
-              color: theme.palette.primary.main,
+              color: theme.palette.info.main,
+              textColor: theme.palette.getContrastText(theme.palette.info.main),
               extendedProps: {
                 type: 'Quiz',
-                course: course.course_name,
+                course: courseName,
               },
             });
             deadlines.push({
               title: `Quiz: ${quiz.quiz_name}`,
               dueDate: quiz.due_date,
               type: 'Quiz',
-              course: course.course_name,
+              course: courseName,
             });
           });
 
-          // Process assignments
           assignmentsData.flat().forEach((assignment) => {
             allEvents.push({
               title: `Assignment: ${assignment.assignment_name}`,
               start: assignment.start_date,
               end: assignment.due_date,
-              color: theme.palette.secondary.main,
+              color: theme.palette.success.main,
+              textColor: theme.palette.getContrastText(theme.palette.success.main),
               extendedProps: {
                 type: 'Assignment',
-                course: course.course_name,
+                course: courseName,
               },
             });
             deadlines.push({
               title: `Assignment: ${assignment.assignment_name}`,
               dueDate: assignment.due_date,
               type: 'Assignment',
-              course: course.course_name,
+              course: courseName,
             });
           });
-        }
+        });
 
-        // Sort deadlines by due date
         deadlines.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
         setUpcomingDeadlines(deadlines);
 
@@ -135,7 +175,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
     };
 
     loadCoursesAndEvents();
-  }, [teacherId, theme.palette.primary.main, theme.palette.secondary.main]);
+  }, [teacherId, theme.palette]);
 
   const handleCourseSelect = (courseId, courseName) => {
     onCourseSelect(courseId);
@@ -148,7 +188,13 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
   if (loadingCourses) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="80vh"
+      >
         <CircularProgress />
         <Typography mt={2}>Loading courses...</Typography>
       </Box>
@@ -157,88 +203,70 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
   if (error) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="80vh"
+      >
         <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
   return (
-    <Box padding={3} sx={{ backgroundColor: theme.palette.background.default, minHeight: '100vh' }}>
+    <StyledContainer>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
-          Dashboard
-        </Typography>
-        <Button
-          variant="outlined"
-          color="secondary"
-          startIcon={<LogoutIcon />}
-          onClick={onLogout}
-        >
-          Logout
-        </Button>
-      </Box>
+      <Header>
+        
+      </Header>
 
       <Grid container spacing={4}>
         {/* Left Column */}
         <Grid item xs={12} md={8}>
           {/* Courses Grid */}
           <Box mb={4}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-              My Courses
-            </Typography>
+            <SectionTitle variant="h6">My Courses</SectionTitle>
             <Grid container spacing={4}>
               {courses.map((course) => (
                 <Grid item xs={12} sm={6} key={course.id}>
-                  <Card
-                    elevation={3}
-                    sx={{
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: theme.shadows[6],
-                      },
-                    }}
-                  >
+                  <CourseCard>
                     <Box
                       sx={{
                         backgroundColor: theme.palette.primary.main,
-                        padding: '16px',
+                        padding: theme.spacing(2),
                         textAlign: 'center',
                         color: theme.palette.primary.contrastText,
                       }}
                     >
-                      <Typography variant="h6" sx={{ fontWeight: '600' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {course.course_name}
                       </Typography>
                     </Box>
-                    <CardContent sx={{ textAlign: 'center', padding: '16px' }}>
+                    <CardContent sx={{ textAlign: 'center', padding: theme.spacing(2) }}>
                       <Typography
                         variant="body2"
                         sx={{ color: theme.palette.text.secondary, minHeight: '60px' }}
                       >
                         {course.description || 'No description available'}
-                      </Typography>5
+                      </Typography>
                     </CardContent>
-                    <CardActions sx={{ justifyContent: 'center', paddingBottom: 2 }}>
+                    <CardActions sx={{ justifyContent: 'center', paddingBottom: theme.spacing(2) }}>
                       <Button
                         size="medium"
                         variant="contained"
-                        color="primary"
+                        color="secondary"
                         onClick={() => handleCourseSelect(course.id, course.course_name)}
                         sx={{
-                          borderRadius: '8px',
+                          borderRadius: theme.shape.borderRadius,
                           textTransform: 'none',
-                          fontWeight: '500',
+                          fontWeight: 500,
                         }}
                       >
                         Select Course
                       </Button>
                     </CardActions>
-                  </Card>
+                  </CourseCard>
                 </Grid>
               ))}
             </Grid>
@@ -246,21 +274,8 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
           {/* Calendar */}
           <Box mb={4}>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 'bold', color: theme.palette.text.primary, mb: 2 }}
-            >
-              Calendar
-            </Typography>
-            <Box
-              sx={{
-                backgroundColor: theme.palette.background.paper,
-                borderRadius: '8px',
-                padding: '1rem',
-                boxShadow: theme.shadows[2],
-                border: `1px solid ${theme.palette.divider}`,
-              }}
-            >
+            <SectionTitle variant="h6">Calendar</SectionTitle>
+            <CalendarContainer>
               <FullCalendar
                 plugins={[dayGridPlugin]}
                 initialView="dayGridMonth"
@@ -275,8 +290,9 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                 eventDisplay="block"
                 dayMaxEvents={true}
                 eventTextColor={theme.palette.getContrastText(theme.palette.background.paper)}
+                eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false }}
               />
-            </Box>
+            </CalendarContainer>
           </Box>
         </Grid>
 
@@ -284,15 +300,13 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
         <Grid item xs={12} md={4}>
           {/* Notifications */}
           <Box mb={4}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-              Notifications
-            </Typography>
+            <SectionTitle variant="h6">Notifications</SectionTitle>
             <Paper
-              elevation={3}
               sx={{
-                padding: '1rem',
+                padding: theme.spacing(2),
                 backgroundColor: theme.palette.background.paper,
-                borderRadius: '8px',
+                boxShadow: 'none', // No shadows
+                border: 'none',    // No borders
               }}
             >
               {notifications.length > 0 ? (
@@ -300,7 +314,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                   {notifications.map((notification) => (
                     <ListItem key={notification.id}>
                       <ListItemIcon>
-                        <NotificationsActiveIcon color="primary" />
+                        <NotificationsActiveIcon color="warning" />
                       </ListItemIcon>
                       <ListItemText
                         primary={notification.message}
@@ -317,15 +331,13 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
 
           {/* Upcoming Deadlines */}
           <Box mb={4}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-              Upcoming Deadlines
-            </Typography>
+            <SectionTitle variant="h6">Upcoming Deadlines</SectionTitle>
             <Paper
-              elevation={3}
               sx={{
-                padding: '1rem',
+                padding: theme.spacing(2),
                 backgroundColor: theme.palette.background.paper,
-                borderRadius: '8px',
+                boxShadow: 'none', // No shadows
+                border: 'none',    // No borders
               }}
             >
               {upcomingDeadlines.length > 0 ? (
@@ -334,9 +346,9 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
                     <ListItem key={index}>
                       <ListItemIcon>
                         {deadline.type === 'Quiz' ? (
-                          <QuizIcon color="secondary" />
+                          <QuizIcon color="info" />
                         ) : (
-                          <AssignmentIcon color="primary" />
+                          <AssignmentIcon color="success" />
                         )}
                       </ListItemIcon>
                       <ListItemText
@@ -353,7 +365,7 @@ const CourseManagement = ({ onCourseSelect, teacherId, onLogout }) => {
           </Box>
         </Grid>
       </Grid>
-    </Box>
+    </StyledContainer>
   );
 };
 

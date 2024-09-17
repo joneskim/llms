@@ -1,8 +1,9 @@
+// src/components/ModulesPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchModulesByCourseId, addModule } from '../services/fakeApi';
 import {
-  Container,
+  Box,
   Typography,
   TextField,
   Button,
@@ -11,51 +12,36 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Tooltip,
   InputAdornment,
   List,
   ListItem,
   ListItemText,
   Paper,
-  Divider,
-  Box,
   CircularProgress,
+  Alert,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import { fetchModulesByCourseId, addModule } from '../services/fakeApi';
+import {
+  StyledContainer,
+  Header,
+  Title,
+  SearchField,
+  BackButton,
+  ErrorBox,
+} from './design/StyledComponents';
 
-const StyledContainer = styled(Container)(({ theme }) => ({
-  marginTop: theme.spacing(4),
-  padding: theme.spacing(4),
-  borderRadius: theme.shape.borderRadius * 2,
-  backgroundColor: theme.palette.background.paper,
-}));
 
-const Header = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(4),
-  display: 'flex',
-  alignItems: 'center',
-}));
-
-const Title = styled(Typography)(({ theme }) => ({
-  flexGrow: 1,
-  fontWeight: theme.typography.fontWeightBold,
-  color: theme.palette.text.primary,
-}));
-
-const SearchField = styled(TextField)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-  backgroundColor: theme.palette.background.default,
-  borderRadius: theme.shape.borderRadius,
-}));
 
 const ModuleList = styled(List)(({ theme }) => ({
   width: '100%',
   backgroundColor: theme.palette.background.paper,
+  padding: 0,
 }));
 
 const ModuleListItem = styled(ListItem)(({ theme }) => ({
@@ -64,36 +50,59 @@ const ModuleListItem = styled(ListItem)(({ theme }) => ({
   '&:hover': {
     backgroundColor: theme.palette.action.hover,
   },
+  cursor: 'pointer',
+}));
+
+const CreateModuleSection = styled(Box)(({ theme }) => ({
+  marginTop: theme.spacing(5),
 }));
 
 const ModulesPage = ({ courseId }) => {
+  const theme = useTheme();
+  const navigate = useNavigate();
+
   const [modules, setModules] = useState([]);
   const [newModuleName, setNewModuleName] = useState('');
   const [editModuleName, setEditModuleName] = useState('');
   const [editModuleId, setEditModuleId] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchModules = async () => {
       setLoading(true);
-      const fetchedModules = await fetchModulesByCourseId(courseId);
-      setModules(fetchedModules);
-      setLoading(false);
+      setError('');
+      try {
+        const fetchedModules = await fetchModulesByCourseId(courseId);
+        setModules(fetchedModules);
+      } catch (err) {
+        console.error('Error fetching modules:', err);
+        setError('Failed to load modules. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchModules();
   }, [courseId]);
 
   const handleCreateModule = async () => {
-    if (newModuleName) {
-      const newModule = await addModule(courseId, newModuleName);
+    if (newModuleName.trim() === '') {
+      setError('Module name cannot be empty.');
+      return;
+    }
+    try {
+      const newModule = await addModule(courseId, newModuleName.trim());
       if (newModule) {
         setModules([...modules, newModule]);
         setNewModuleName('');
+        setError('');
       }
+    } catch (err) {
+      console.error('Error adding module:', err);
+      setError('Failed to add module. Please try again.');
     }
   };
 
@@ -107,16 +116,38 @@ const ModulesPage = ({ courseId }) => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveEditModule = () => {
-    setModules((prevModules) =>
-      prevModules.map((mod) =>
-        mod.id === editModuleId ? { ...mod, module_name: editModuleName } : mod
-      )
-    );
-    setEditDialogOpen(false);
+  const handleSaveEditModule = async () => {
+    if (editModuleName.trim() === '') {
+      setError('Module name cannot be empty.');
+      return;
+    }
+    try {
+      // Assuming you have an API endpoint to update the module name
+      // Replace `updateModule` with your actual API call
+      // await updateModule(editModuleId, editModuleName.trim());
+
+      // For demonstration, we'll just update the local state
+      setModules((prevModules) =>
+        prevModules.map((mod) =>
+          mod.id === editModuleId ? { ...mod, module_name: editModuleName.trim() } : mod
+        )
+      );
+      setEditDialogOpen(false);
+      setEditModuleName('');
+      setEditModuleId(null);
+      setError('');
+    } catch (err) {
+      console.error('Error updating module:', err);
+      setError('Failed to update module. Please try again.');
+    }
   };
 
   const handleDeleteModule = (moduleId) => {
+    // Assuming you have an API endpoint to delete the module
+    // Replace `deleteModule` with your actual API call
+    // await deleteModule(moduleId);
+
+    // For demonstration, we'll just update the local state
     setModules((prevModules) => prevModules.filter((mod) => mod.id !== moduleId));
   };
 
@@ -129,12 +160,12 @@ const ModulesPage = ({ courseId }) => {
   };
 
   return (
-    <StyledContainer maxWidth="md">
+    <StyledContainer>
       {/* Header Section */}
       <Header>
-        <IconButton onClick={handleBack} aria-label="Go back">
+        <BackButton onClick={handleBack} aria-label="Go back">
           <ArrowBackIosNewIcon />
-        </IconButton>
+        </BackButton>
         <Title variant="h5">Modules</Title>
       </Header>
 
@@ -160,6 +191,10 @@ const ModulesPage = ({ courseId }) => {
         <Box display="flex" justifyContent="center" alignItems="center" height="40vh">
           <CircularProgress />
         </Box>
+      ) : error ? (
+        <Box display="flex" justifyContent="center" alignItems="center" height="40vh">
+          <Alert severity="error">{error}</Alert>
+        </Box>
       ) : (
         <>
           {/* Modules List */}
@@ -168,10 +203,9 @@ const ModulesPage = ({ courseId }) => {
               filteredModules.map((module) => (
                 <ModuleListItem
                   key={module.id}
-                  button
                   onClick={() => handleOpenModule(module)}
                   secondaryAction={
-                    <>
+                    <Box>
                       <IconButton
                         edge="end"
                         aria-label="edit module"
@@ -179,6 +213,7 @@ const ModulesPage = ({ courseId }) => {
                           e.stopPropagation();
                           handleEditModule(module);
                         }}
+                        sx={{ color: theme.palette.text.primary }}
                       >
                         <EditOutlinedIcon />
                       </IconButton>
@@ -189,10 +224,11 @@ const ModulesPage = ({ courseId }) => {
                           e.stopPropagation();
                           handleDeleteModule(module.id);
                         }}
+                        sx={{ color: theme.palette.error.main }}
                       >
                         <DeleteOutlineIcon />
                       </IconButton>
-                    </>
+                    </Box>
                   }
                 >
                   <ListItemText primary={module.module_name} />
@@ -206,11 +242,11 @@ const ModulesPage = ({ courseId }) => {
           </ModuleList>
 
           {/* Create Module Section */}
-          <Box mt={5}>
+          <CreateModuleSection>
             <Typography variant="h6" color="textPrimary" gutterBottom>
               Create a New Module
             </Typography>
-            <Paper elevation={1} sx={{ padding: 2, borderRadius: '8px' }}>
+            <Paper sx={{ padding: 2, borderRadius: '8px', backgroundColor: theme.palette.background.paper }}>
               <TextField
                 fullWidth
                 variant="outlined"
@@ -218,33 +254,35 @@ const ModulesPage = ({ courseId }) => {
                 value={newModuleName}
                 onChange={(e) => setNewModuleName(e.target.value)}
                 size="small"
-                sx={{ marginBottom: 2, backgroundColor: 'white' }}
+                sx={{ marginBottom: 2, backgroundColor: theme.palette.background.paper, borderRadius: 1 }}
               />
               <Button
                 variant="contained"
                 startIcon={<AddCircleOutlineIcon />}
                 onClick={handleCreateModule}
                 sx={{
-                  backgroundColor: '#1976d2',
+                  backgroundColor: theme.palette.primary.main,
                   color: '#fff',
                   textTransform: 'none',
                   fontWeight: 'bold',
                   padding: '10px 20px',
                   borderRadius: '8px',
+                  width: '100%',
                 }}
-                fullWidth
                 aria-label="Create new module"
               >
                 Create Module
               </Button>
             </Paper>
-          </Box>
+          </CreateModuleSection>
 
           {/* Edit Module Dialog */}
           <Dialog
             open={editDialogOpen}
             onClose={() => setEditDialogOpen(false)}
             aria-labelledby="edit-module-dialog-title"
+            fullWidth
+            maxWidth="sm"
           >
             <DialogTitle id="edit-module-dialog-title">Edit Module Name</DialogTitle>
             <DialogContent>
@@ -255,14 +293,14 @@ const ModulesPage = ({ courseId }) => {
                 value={editModuleName}
                 onChange={(e) => setEditModuleName(e.target.value)}
                 size="small"
-                sx={{ marginTop: 1 }}
+                sx={{ marginTop: 1, backgroundColor: theme.palette.background.paper, borderRadius: 1 }}
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setEditDialogOpen(false)} color="primary">
+              <Button onClick={() => setEditDialogOpen(false)} color="secondary" sx={{ textTransform: 'none' }}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveEditModule} color="primary">
+              <Button onClick={handleSaveEditModule} color="primary" sx={{ textTransform: 'none' }}>
                 Save
               </Button>
             </DialogActions>

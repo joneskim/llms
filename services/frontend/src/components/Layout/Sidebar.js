@@ -1,4 +1,3 @@
-// src/components/Layout/Sidebar.js
 import React, { useState, useEffect } from 'react';
 import { styled } from '@mui/material/styles';
 import {
@@ -6,14 +5,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   Box,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 
-// Importing necessary icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QuizIcon from '@mui/icons-material/Quiz';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -22,13 +19,10 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonIcon from '@mui/icons-material/Person';
 import MenuBookIcon from '@mui/icons-material/MenuBook'; // For Course Management
 
-// Define the navigation items
 const navItems = [
   { text: 'Course Management', icon: <MenuBookIcon />, path: '/course-management' },
-  // Course-specific links will be added dynamically based on selectedCourseId
 ];
 
-// Styled Components
 const SidebarContainer = styled(Box)(({ theme, isOpen }) => ({
   width: isOpen ? '250px' : '70px',
   height: '100vh',
@@ -41,7 +35,6 @@ const SidebarContainer = styled(Box)(({ theme, isOpen }) => ({
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.standard,
   }),
-  boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
   overflowX: 'hidden',
   zIndex: 1200,
 }));
@@ -91,17 +84,15 @@ const Sidebar = ({ isOpen }) => {
   const [courseName, setCourseName] = useState('');
 
   useEffect(() => {
-    // Retrieve the selectedCourseId and courseName from localStorage
     const storedCourseId = localStorage.getItem('selected_course_id');
     const storedCourseName = localStorage.getItem('selected_course_name');
 
     if (storedCourseId) {
       setSelectedCourseId(storedCourseId);
-      setCourseName(storedCourseName || ''); // Fallback to empty string if not found
+      setCourseName(storedCourseName || '');
     }
   }, []);
 
-  // Define course-specific navigation items
   const courseNavItems = selectedCourseId
     ? [
         { text: 'Overview', icon: <DashboardIcon />, path: `/course/${selectedCourseId}/overview` },
@@ -114,11 +105,6 @@ const Sidebar = ({ isOpen }) => {
 
   return (
     <SidebarContainer isOpen={isOpen}>
-
-
-      <Divider sx={{ backgroundColor: '#DEE2E6' }} />
-
-      {/* Navigation Items */}
       <List>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -151,45 +137,38 @@ const Sidebar = ({ isOpen }) => {
         })}
       </List>
 
-      {/* Divider */}
-      <Divider sx={{ backgroundColor: '#DEE2E6' }} />
-
-      {/* Course-Specific Navigation */}
       {selectedCourseId && (
-        <>
-          
-          <List>
-            {courseNavItems.map((item) => {
-              const isActive = location.pathname === item.path;
+        <List>
+          {courseNavItems.map((item) => {
+            const isActive = location.pathname === item.path;
 
-              return (
-                <Tooltip key={item.text} title={!isOpen ? item.text : ''} placement="right">
-                  <NavItem
-                    component={Link}
-                    to={item.path}
-                    active={isActive ? 1 : 0}
-                    sx={{ paddingY: isOpen ? 1.5 : 1 }}
-                    aria-label={item.text}
-                  >
-                    <ListItemIcon sx={{ color: 'inherit', minWidth: '40px' }}>
-                      {item.icon}
-                    </ListItemIcon>
-                    {isOpen && (
-                      <ListItemText
-                        primary={item.text}
-                        sx={{
-                          marginLeft: -2,
-                          fontFamily: 'Poppins, sans-serif',
-                          fontWeight: isActive ? '600' : '400',
-                        }}
-                      />
-                    )}
-                  </NavItem>
-                </Tooltip>
-              );
-            })}
-          </List>
-        </>
+            return (
+              <Tooltip key={item.text} title={!isOpen ? item.text : ''} placement="right">
+                <NavItem
+                  component={Link}
+                  to={item.path}
+                  active={isActive ? 1 : 0}
+                  sx={{ paddingY: isOpen ? 1.5 : 1 }}
+                  aria-label={item.text}
+                >
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: '40px' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  {isOpen && (
+                    <ListItemText
+                      primary={item.text}
+                      sx={{
+                        marginLeft: -2,
+                        fontFamily: 'Poppins, sans-serif',
+                        fontWeight: isActive ? '600' : '400',
+                      }}
+                    />
+                  )}
+                </NavItem>
+              </Tooltip>
+            );
+          })}
+        </List>
       )}
     </SidebarContainer>
   );

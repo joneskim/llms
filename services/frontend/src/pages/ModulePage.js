@@ -21,31 +21,15 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import { fetchModulesByCourseId, fetchQuizzesByModuleId, fetchAssignmentsByModuleId } from '../services/fakeApi';
+import {
+  StyledContainer,
+  Header,
+  Title,
+  SearchField,
+  BackButton,
+  ErrorBox,
+} from './design/StyledComponents';
 
-const StyledContainer = styled(Container)(({ theme }) => ({
-  marginTop: theme.spacing(4),
-  padding: theme.spacing(4),
-  borderRadius: theme.shape.borderRadius * 2,
-  backgroundColor: theme.palette.background.paper,
-}));
-
-const Header = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(4),
-  display: 'flex',
-  alignItems: 'center',
-}));
-
-const Title = styled(Typography)(({ theme }) => ({
-  flexGrow: 1,
-  fontWeight: theme.typography.fontWeightBold,
-  color: theme.palette.text.primary,
-}));
-
-const SearchField = styled(TextField)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-  backgroundColor: theme.palette.background.default,
-  borderRadius: theme.shape.borderRadius,
-}));
 
 const QuizList = styled(List)(({ theme }) => ({
   width: '100%',
@@ -163,10 +147,10 @@ const ModulePage = () => {
     <StyledContainer maxWidth="md">
       {/* Header Section */}
       <Header>
-        <IconButton onClick={handleBack} aria-label="Go back">
+        <BackButton onClick={handleBack} aria-label="Go back">
           <ArrowBackIosNewIcon />
-        </IconButton>
-        <Title variant="h5">Quizzes for {module.module_name}</Title>
+        </BackButton>
+        <Title variant="h5">Module</Title>
       </Header>
 
       {/* Search Bar */}

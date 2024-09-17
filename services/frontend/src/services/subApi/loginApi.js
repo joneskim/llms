@@ -1,8 +1,9 @@
-// services/authService.js
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import getApiBaseUrl from './apiBase';
 
-const API_BASE_URL = 'http://localhost:8000';
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Function to validate teacher login
 export const validateTeacherLogin = async (username, password) => {

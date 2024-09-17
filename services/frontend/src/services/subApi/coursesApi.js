@@ -1,6 +1,7 @@
 import axios from 'axios';
+import getApiBaseUrl from './apiBase';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = getApiBaseUrl();
 
 // Fetch courses by teacher ID
 export const fetchCoursesByTeacherId = async (teacherId) => {

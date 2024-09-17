@@ -31,7 +31,12 @@ async function main() {
         email: 'john.anderson@example.com',
         password: 'hashedpassword1', // Use a real hash in production
       },
-      // Add more teachers as needed
+      {
+        uniqueId: 'teacher002',
+        name: 'Ms. Emily Johnson',
+        email: 'emily.johnson@example.com',
+        password: 'hashedpassword2',
+      },
     ];
 
     const teachers = [];
@@ -69,7 +74,8 @@ async function main() {
     const courseNames = [
       'Physics 101',
       'Chemistry 101',
-      // Add more courses as needed
+      'Mathematics 101',
+      'Biology 101',
     ];
 
     const courses = [];
@@ -199,17 +205,18 @@ async function main() {
         console.log(`✅ Option seeded: "${option.text}" for Question ID: ${question.id}`);
       }
 
-      // Assign the first option as the CorrectAnswer for the Question
+      // Assign a random option as the CorrectAnswer for the Question
+      const correctAnswerIndex = faker.number.int({ min: 0, max: 3 });
       await prisma.correctAnswer.create({
         data: {
           questionId: question.id,
-          answerText: optionsForQuestion[0].text,
+          answerText: optionsForQuestion[correctAnswerIndex].text,
         },
       });
       console.log(`✅ Correct Answer seeded for Question ID: ${question.id}`);
     }
 
-    // 11. Seed StudentQuizResults
+    // 11. Seed Student Quiz Results
     console.log('📊 Seeding Student Quiz Results...');
     for (const student of students) {
       const numberOfQuizzesTaken = faker.number.int({ min: 10, max: 20 });

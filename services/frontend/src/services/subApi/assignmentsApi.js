@@ -1,6 +1,8 @@
 import axios from 'axios';
+import getApiBaseUrl from './apiBase';
 
-const API_BASE_URL = 'http://localhost:8000';
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Fetch all assignments for a specific module
 export const fetchAssignmentsByModuleId = async (moduleId) => {

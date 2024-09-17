@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import Sidebar from '../components/Layout/Sidebar';
 import TopBar from '../components/Layout/TopBar';
+import { BorderBottom } from '@mui/icons-material';
 
 const CoursePage = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
