@@ -1,5 +1,3 @@
-// src/pages/OverviewPage.js
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -17,18 +15,24 @@ import {
   Grid,
   Pagination,
   Button,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import {
   Chart,
   CategoryScale,
   LinearScale,
-  BarElement,
-  Title,
+  PointElement,
+  LineElement,
+  Title as ChartTitle,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
+  TimeScale,
 } from 'chart.js';
+import 'chartjs-adapter-date-fns';
 import {
   fetchModulesByCourseId,
   fetchStudentsByCourseId,
@@ -37,7 +41,7 @@ import {
   fetchResultsByAssignmentId,
 } from '../services/fakeApi';
 
-// Import the required icons
+// Import required icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QuizIcon from '@mui/icons-material/Quiz';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -45,31 +49,78 @@ import PeopleIcon from '@mui/icons-material/People';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
-// Register the components with Chart.js
-Chart.register(CategoryScale, LinearScale, BarElement, Title, ChartTooltip, ChartLegend);
+// Register Chart.js components
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ChartTitle,
+  ChartTooltip,
+  ChartLegend,
+  TimeScale
+);
 
 // Styled Components
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderRadius: theme.spacing(2),
-  backgroundColor: '#FFFFFF', // Pure White
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+const StyledContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(4),
+  backgroundColor: theme.palette.background.default,
+  minHeight: '100vh',
 }));
 
-const StatisticBox = styled(Box)(({ theme }) => ({
+const Header = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+}));
+
+const StatisticCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
   display: 'flex',
   alignItems: 'center',
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: theme.palette.background.paper,
+  boxShadow: theme.shadows[1],
+  position: 'relative',
+  overflow: 'hidden',
+  '&:hover $SneakPeek': {
+    opacity: 1,
+    visibility: 'visible',
+  },
+}));
+
+const SneakPeek = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.7)',
+  color: '#fff',
   padding: theme.spacing(2),
-  borderRadius: theme.spacing(1),
-  backgroundColor: '#F3F4F6', // Light gray for subtle differentiation
-  color: '#212529', // Dark Gray
-  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  opacity: 0,
+  visibility: 'hidden',
+  transition: 'opacity 0.3s ease',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
 }));
 
 const StatisticIcon = styled(Box)(({ theme }) => ({
   marginRight: theme.spacing(2),
+  color: theme.palette.primary.main,
   fontSize: '2rem',
-  color: theme.palette.primary.main, // Use theme's primary color
+}));
+
+const ChartContainer = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(3),
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: theme.palette.background.paper,
+  boxShadow: theme.shadows[1],
+}));
+
+const TableContainerStyled = styled(TableContainer)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[1],
 }));
 
 const OverviewPage = () => {
@@ -111,7 +162,7 @@ const OverviewPage = () => {
         const flattenedAssignments = allAssignments.flat();
         setAssignments(flattenedAssignments);
 
-        // Fetch assignment results concurrently
+        // Fetch assignment results
         const assignmentResultPromises = flattenedAssignments.map((assignment) =>
           fetchResultsByAssignmentId(courseId, assignment.id)
         );
@@ -132,7 +183,7 @@ const OverviewPage = () => {
     loadCourseData();
   }, [courseId]);
 
-  // Combine recent quizzes and assignments using useMemo (always called)
+  // Combine recent quizzes and assignments
   const recentResults = useMemo(() => {
     const combined = [
       ...quizResults.map((quiz) => ({
@@ -140,23 +191,21 @@ const OverviewPage = () => {
         averageScore: quiz.averageScore || 0,
         type: 'Quiz',
         date: quiz.date || new Date().toISOString(),
-        id: quiz.id, // Ensure each quiz has an id
+        id: quiz.id,
       })),
       ...assignmentResults.map((assignment) => ({
         name: assignment.assignmentName || 'Unnamed Assignment',
         averageScore: assignment.averageScore || 0,
         type: 'Assignment',
         date: assignment.date || new Date().toISOString(),
-        id: assignment.id, // Ensure each assignment has an id
+        id: assignment.id,
       })),
     ];
 
-    return combined
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
+    return combined.sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [quizResults, assignmentResults]);
 
-  // Sorted Results for Sorting Functionality
+  // Sorted Results
   const sortedResults = useMemo(() => {
     const sortableResults = [...recentResults];
     if (sortConfig !== null) {
@@ -179,76 +228,104 @@ const OverviewPage = () => {
     return sortedResults.slice(startIndex, startIndex + rowsPerPage);
   }, [sortedResults, currentPage]);
 
-  // Prepare chart data
-  const chartData = useMemo(() => ({
-    labels: recentResults.map((result) => result.name),
-    datasets: [
-      {
-        label: 'Average Scores (%)',
-        data: recentResults.map((result) => result.averageScore),
-        backgroundColor: recentResults.map((result) =>
-          result.type === 'Quiz' ? '#3498DB' : '#E67E22' // Sky Blue for Quizzes, Sunset Orange for Assignments
-        ),
-      },
-    ],
-  }), [recentResults]);
+  // Prepare line chart data
+  const chartData = useMemo(() => {
+    const labels = recentResults.map((result) => new Date(result.date));
+    const quizScores = recentResults.map((result) =>
+      result.type === 'Quiz' ? result.averageScore : null
+    );
+    const assignmentScores = recentResults.map((result) =>
+      result.type === 'Assignment' ? result.averageScore : null
+    );
 
-  // Prepare data for charts and statistics
-const modulesCount = modules.length;
-const quizzesCount = quizResults.length;
-const assignmentsCount = assignments.length;
-const studentsCount = students.length;
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Quiz Scores',
+          data: quizScores,
+          borderColor: '#42a5f5',
+          backgroundColor: 'rgba(66, 165, 245, 0.2)',
+          tension: 0.4,
+          fill: false,
+          spanGaps: true,
+        },
+        {
+          label: 'Assignment Scores',
+          data: assignmentScores,
+          borderColor: '#66bb6a',
+          backgroundColor: 'rgba(102, 187, 106, 0.2)',
+          tension: 0.4,
+          fill: false,
+          spanGaps: true,
+        },
+      ],
+    };
+  }, [recentResults]);
 
-
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          color: '#212529', // Dark Gray
-          font: {
-            family: 'Poppins, sans-serif',
-            size: 14,
+  // Chart options
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: 'text.primary',
+            font: {
+              family: 'Roboto, sans-serif',
+              size: 14,
+            },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return `Average Score: ${context.parsed.y}%`;
+            },
           },
         },
       },
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            return `Average Score: ${context.parsed.y}%`;
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: 'text.secondary',
+            font: {
+              family: 'Roboto, sans-serif',
+              size: 12,
+            },
+            callback: function (value) {
+              return value + '%';
+            },
+          },
+          grid: {
+            color: 'divider',
+          },
+        },
+        x: {
+          type: 'time',
+          time: {
+            unit: 'day',
+            displayFormats: {
+              day: 'MMM d',
+            },
+          },
+          ticks: {
+            color: 'text.secondary',
+            font: {
+              family: 'Roboto, sans-serif',
+              size: 12,
+            },
+          },
+          grid: {
+            display: false,
           },
         },
       },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: '#212529', // Dark Gray
-          font: {
-            family: 'Poppins, sans-serif',
-            size: 12,
-          },
-        },
-        grid: {
-          color: '#DEE2E6', // Very Light Gray
-        },
-      },
-      x: {
-        ticks: {
-          color: '#212529', // Dark Gray
-          font: {
-            family: 'Poppins, sans-serif',
-            size: 12,
-          },
-        },
-        grid: {
-          display: false,
-        },
-      },
-    },
-  }), [recentResults]);
+    }),
+    []
+  );
 
   // Handle Sorting
   const handleSort = (key) => {
@@ -268,7 +345,13 @@ const studentsCount = students.length;
     }
   };
 
-  // Render Loading State
+  // Counts
+  const modulesCount = modules.length;
+  const quizzesCount = quizResults.length;
+  const assignmentsCount = assignments.length;
+  const studentsCount = students.length;
+
+  // Loading State
   if (loading) {
     return (
       <Box
@@ -276,14 +359,14 @@ const studentsCount = students.length;
         justifyContent="center"
         alignItems="center"
         minHeight="80vh"
-        sx={{ backgroundColor: '#FFFFFF' }} // Pure White
+        sx={{ backgroundColor: 'background.default' }}
       >
         <CircularProgress color="primary" />
       </Box>
     );
   }
 
-  // Render Error State
+  // Error State
   if (error) {
     return (
       <Box
@@ -292,7 +375,7 @@ const studentsCount = students.length;
         justifyContent="center"
         alignItems="center"
         minHeight="80vh"
-        sx={{ backgroundColor: '#FFFFFF' }} // Pure White
+        sx={{ backgroundColor: 'background.default' }}
       >
         <Alert severity="error" sx={{ marginBottom: '1rem' }}>
           {error}
@@ -305,117 +388,162 @@ const studentsCount = students.length;
   }
 
   return (
-    <Box padding={3} sx={{ backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
-      <Typography
-        variant="h4"
-        sx={{
-          fontWeight: 'bold',
-          color: '#212529', // Dark Gray
-          marginBottom: '2rem',
-          fontFamily: 'Poppins, sans-serif',
-        }}
-      >
-        {`Course "${courseName}" - Overview`}
-      </Typography>
+    <StyledContainer>
+      <Header>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
+          {`Course "${courseName}" - Overview`}
+        </Typography>
+      </Header>
 
       {/* Statistics Section */}
-      <Grid container spacing={3} sx={{ marginBottom: '2rem' }}>
+      <Grid container spacing={3} sx={{ marginBottom: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatisticBox>
+          <StatisticCard>
             <StatisticIcon>
               <DashboardIcon fontSize="large" />
             </StatisticIcon>
             <Box>
-              <Typography variant="h6" sx={{ color: '#3498DB', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
                 {modulesCount}
               </Typography>
-              <Typography variant="subtitle1" sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 Modules
               </Typography>
             </Box>
-          </StatisticBox>
+            <SneakPeek>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+                Modules
+              </Typography>
+              <List dense>
+                {modules.slice(0, 5).map((module) => (
+                  <ListItem key={module.id} disableGutters>
+                    <ListItemText primary={module.module_name} />
+                  </ListItem>
+                ))}
+                {modules.length > 5 && (
+                  <Typography variant="body2">and {modules.length - 5} more...</Typography>
+                )}
+              </List>
+            </SneakPeek>
+          </StatisticCard>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
-          <StatisticBox>
+          <StatisticCard>
             <StatisticIcon>
               <QuizIcon fontSize="large" />
             </StatisticIcon>
             <Box>
-              <Typography variant="h6" sx={{ color: '#3498DB', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
                 {quizzesCount}
               </Typography>
-              <Typography variant="subtitle1" sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 Quizzes
               </Typography>
             </Box>
-          </StatisticBox>
+            <SneakPeek>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+                Recent Quizzes
+              </Typography>
+              <List dense>
+                {quizResults.slice(0, 5).map((quiz) => (
+                  <ListItem key={quiz.id} disableGutters>
+                    <ListItemText primary={quiz.quizName} />
+                  </ListItem>
+                ))}
+                {quizzesCount > 5 && (
+                  <Typography variant="body2">and {quizzesCount - 5} more...</Typography>
+                )}
+              </List>
+            </SneakPeek>
+          </StatisticCard>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
-          <StatisticBox>
+          <StatisticCard>
             <StatisticIcon>
               <AssignmentIcon fontSize="large" />
             </StatisticIcon>
             <Box>
-              <Typography variant="h6" sx={{ color: '#3498DB', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
                 {assignmentsCount}
               </Typography>
-              <Typography variant="subtitle1" sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 Assignments
               </Typography>
             </Box>
-          </StatisticBox>
+            <SneakPeek>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+                Recent Assignments
+              </Typography>
+              <List dense>
+                {assignments.slice(0, 5).map((assignment) => (
+                  <ListItem key={assignment.id} disableGutters>
+                    <ListItemText primary={assignment.assignment_name} />
+                  </ListItem>
+                ))}
+                {assignmentsCount > 5 && (
+                  <Typography variant="body2">and {assignmentsCount - 5} more...</Typography>
+                )}
+              </List>
+            </SneakPeek>
+          </StatisticCard>
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
-          <StatisticBox>
+          <StatisticCard>
             <StatisticIcon>
               <PeopleIcon fontSize="large" />
             </StatisticIcon>
             <Box>
-              <Typography variant="h6" sx={{ color: '#3498DB', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
                 {studentsCount}
               </Typography>
-              <Typography variant="subtitle1" sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 Students Enrolled
               </Typography>
             </Box>
-          </StatisticBox>
+            <SneakPeek>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+                Students
+              </Typography>
+              <List dense>
+                {students.slice(0, 5).map((student) => (
+                  <ListItem key={student.id} disableGutters>
+                    <ListItemText primary={student.name} />
+                  </ListItem>
+                ))}
+                {studentsCount > 5 && (
+                  <Typography variant="body2">and {studentsCount - 5} more...</Typography>
+                )}
+              </List>
+            </SneakPeek>
+          </StatisticCard>
         </Grid>
       </Grid>
 
-      {/* Recent Quiz and Assignment Results Chart */}
-      <StyledPaper>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 'bold', color: '#212529', marginBottom: '1rem', fontFamily: 'Poppins, sans-serif' }}
-        >
-          Recent Quiz and Assignment Results
+      {/* Chart Section */}
+      <ChartContainer>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.primary', marginBottom: 2 }}>
+          Recent Quiz and Assignment Results Over Time
         </Typography>
         {recentResults.length > 0 ? (
-          <Bar data={chartData} options={chartOptions} />
+          <Line data={chartData} options={chartOptions} />
         ) : (
-          <Typography variant="body1" sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
+          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
             No recent results available.
           </Typography>
         )}
-      </StyledPaper>
+      </ChartContainer>
 
-      {/* Recent Quizzes and Assignments Table */}
+      {/* Recent Results Table */}
       <Box marginTop={4}>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 'bold', color: '#212529', marginBottom: '1rem', fontFamily: 'Poppins, sans-serif' }}
-        >
+        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.primary', marginBottom: 2 }}>
           Recent Quizzes and Assignments
         </Typography>
-        <TableContainer component={Paper} sx={{ backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', overflowX: 'auto' }}>
+        <TableContainerStyled component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell
-                  sx={{ color: '#212529', fontWeight: 'bold', fontFamily: 'Poppins, sans-serif', cursor: 'pointer' }}
+                  sx={{ fontWeight: 'bold', cursor: 'pointer' }}
                   onClick={() => handleSort('type')}
                 >
                   Type
@@ -428,7 +556,7 @@ const studentsCount = students.length;
                   ) : null}
                 </TableCell>
                 <TableCell
-                  sx={{ color: '#212529', fontWeight: 'bold', fontFamily: 'Poppins, sans-serif', cursor: 'pointer' }}
+                  sx={{ fontWeight: 'bold', cursor: 'pointer' }}
                   onClick={() => handleSort('name')}
                 >
                   Name
@@ -441,7 +569,7 @@ const studentsCount = students.length;
                   ) : null}
                 </TableCell>
                 <TableCell
-                  sx={{ color: '#212529', fontWeight: 'bold', fontFamily: 'Poppins, sans-serif', cursor: 'pointer' }}
+                  sx={{ fontWeight: 'bold', cursor: 'pointer' }}
                   onClick={() => handleSort('averageScore')}
                 >
                   Average Score (%)
@@ -457,53 +585,44 @@ const studentsCount = students.length;
             </TableHead>
             <TableBody>
               {paginatedResults.length > 0 ? (
-                paginatedResults.map((result, index) => (
+                paginatedResults.map((result) => (
                   <TableRow
-                    key={index}
+                    key={result.id}
                     onClick={() => handleNavigate(result.type, result.id)}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View details for ${result.type}: ${result.name}`}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') handleNavigate(result.type, result.id);
-                    }}
                     sx={{ cursor: 'pointer' }}
+                    hover
                   >
-                    <TableCell sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
-                      {result.type}
-                    </TableCell>
-                    <TableCell sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
-                      {result.name}
-                    </TableCell>
-                    <TableCell sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
-                      {result.averageScore}%
-                    </TableCell>
+                    <TableCell>{result.type}</TableCell>
+                    <TableCell>{result.name}</TableCell>
+                    <TableCell>{result.averageScore}%</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} align="center" sx={{ color: '#212529', fontFamily: 'Poppins, sans-serif' }}>
+                  <TableCell colSpan={3} align="center">
                     No recent results available.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </TableContainer>
+        </TableContainerStyled>
 
         {/* Pagination Controls */}
-        {recentResults.length > rowsPerPage && (
+        {sortedResults.length > rowsPerPage && (
           <Box display="flex" justifyContent="center" marginTop={2}>
             <Pagination
-              count={Math.ceil(recentResults.length / rowsPerPage)}
+              count={Math.ceil(sortedResults.length / rowsPerPage)}
               page={currentPage}
               onChange={(e, page) => setCurrentPage(page)}
               color="primary"
+              showFirstButton
+              showLastButton
             />
           </Box>
         )}
       </Box>
-    </Box>
+    </StyledContainer>
   );
 };
 

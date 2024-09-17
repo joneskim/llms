@@ -15,7 +15,7 @@ import {
   CircularProgress,
   Tooltip,
 } from '@mui/material';
-import { styled } from '@mui/system';
+import { styled, useTheme } from '@mui/system';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { validateTeacherLogin } from '../../services/fakeApi'; // Adjust the path as needed
 import { useNavigate } from 'react-router-dom';
@@ -26,22 +26,17 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   maxWidth: 400,
   width: '100%',
   borderRadius: theme.spacing(2),
-  boxShadow: '0 4px 30px rgba(0,0,0,0.1)',
-  backgroundColor: '#1e1e2f',
-  color: '#ffffff',
+  boxShadow: theme.shadows[3],
+  backgroundColor: theme.palette.background.paper,
+  color: theme.palette.text.primary,
 }));
 
 const StyledButton = styled(Button)(({ theme }) => ({
   marginTop: theme.spacing(3),
   padding: theme.spacing(1.5),
   borderRadius: theme.spacing(1),
-  backgroundColor: '#3f51b5',
-  color: '#ffffff',
   fontWeight: 600,
   fontSize: '1rem',
-  '&:hover': {
-    backgroundColor: '#303f9f',
-  },
 }));
 
 const HeaderBox = styled(Box)(({ theme }) => ({
@@ -51,26 +46,6 @@ const HeaderBox = styled(Box)(({ theme }) => ({
 
 const InputField = styled(TextField)(({ theme }) => ({
   marginBottom: theme.spacing(3),
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': {
-      borderColor: '#555',
-    },
-    '&:hover fieldset': {
-      borderColor: '#3f51b5',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#3f51b5',
-    },
-  },
-  '& .MuiInputLabel-root': {
-    color: '#ccc',
-  },
-  '& .MuiInputLabel-root.Mui-focused': {
-    color: '#fff',
-  },
-  '& .MuiOutlinedInput-input': {
-    color: '#fff',
-  },
 }));
 
 const Login = ({ onLogin }) => {
@@ -83,6 +58,7 @@ const Login = ({ onLogin }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
+  const theme = useTheme();
 
   // Handler for login submission
   const handleLogin = async () => {
@@ -97,14 +73,12 @@ const Login = ({ onLogin }) => {
     setIsSubmitting(true);
     try {
       const response = await validateTeacherLogin(username, password);
-      console.log('Login response:', response);
 
       if (response && response.session_token && response.teacherId) {
         // Successful login
         if (onLogin) {
           onLogin(response.teacherId);
         }
-        console.log(`Logged in successfully with teacher ID: ${response.teacherId}`);
 
         // Redirect to dashboard or desired page
         navigate('/dashboard');
@@ -137,7 +111,7 @@ const Login = ({ onLogin }) => {
       container
       justifyContent="center"
       alignItems="center"
-      sx={{ minHeight: '100vh', backgroundColor: '#121212' }}
+      sx={{ minHeight: '100vh' }}
     >
       <StyledPaper elevation={3}>
         <HeaderBox>
@@ -147,18 +121,18 @@ const Login = ({ onLogin }) => {
             sx={{
               fontFamily: 'Poppins, sans-serif',
               fontWeight: 700,
-              color: '#3f51b5',
+              color: theme.palette.primary.main,
             }}
           >
             Teacher Login
           </Typography>
-          <Typography variant="body2" sx={{ color: '#ccc', marginTop: 1 }}>
+          <Typography variant="body2" sx={{ marginTop: 1, color: theme.palette.text.secondary }}>
             Welcome back! Please enter your credentials to continue.
           </Typography>
         </HeaderBox>
 
         {error && (
-          <Alert severity="error" sx={{ marginBottom: 2, backgroundColor: '#f44336', color: '#fff' }}>
+          <Alert severity="error" sx={{ marginBottom: 2 }}>
             {error}
           </Alert>
         )}
@@ -207,11 +181,9 @@ const Login = ({ onLogin }) => {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               color="primary"
-              sx={{ color: '#ccc', '&.Mui-checked': { color: '#3f51b5' } }}
             />
           }
           label="Remember Me"
-          sx={{ color: '#ccc' }}
         />
 
         <StyledButton
@@ -225,14 +197,14 @@ const Login = ({ onLogin }) => {
         </StyledButton>
 
         <Box mt={2} textAlign="center">
-          <Typography variant="body2" sx={{ color: '#ccc' }}>
+          <Typography variant="body2">
             Forgot your password?{' '}
             <Button
               variant="text"
               color="primary"
               size="small"
               onClick={() => navigate('/forgot-password')}
-              sx={{ textTransform: 'none', color: '#3f51b5' }}
+              sx={{ textTransform: 'none' }}
               aria-label="forgot password"
             >
               Reset Password

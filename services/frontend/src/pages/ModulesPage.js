@@ -6,13 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
   Dialog,
   DialogActions,
@@ -20,13 +13,58 @@ import {
   DialogTitle,
   Tooltip,
   InputAdornment,
-  Pagination,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  Divider,
   Box,
+  CircularProgress,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { styled } from '@mui/material/styles';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import SearchIcon from '@mui/icons-material/Search';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+
+const StyledContainer = styled(Container)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  padding: theme.spacing(4),
+  borderRadius: theme.shape.borderRadius * 2,
+  backgroundColor: theme.palette.background.paper,
+}));
+
+const Header = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+  display: 'flex',
+  alignItems: 'center',
+}));
+
+const Title = styled(Typography)(({ theme }) => ({
+  flexGrow: 1,
+  fontWeight: theme.typography.fontWeightBold,
+  color: theme.palette.text.primary,
+}));
+
+const SearchField = styled(TextField)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  backgroundColor: theme.palette.background.default,
+  borderRadius: theme.shape.borderRadius,
+}));
+
+const ModuleList = styled(List)(({ theme }) => ({
+  width: '100%',
+  backgroundColor: theme.palette.background.paper,
+}));
+
+const ModuleListItem = styled(ListItem)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius,
+  marginBottom: theme.spacing(1),
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
 
 const ModulesPage = ({ courseId }) => {
   const [modules, setModules] = useState([]);
@@ -35,14 +73,15 @@ const ModulesPage = ({ courseId }) => {
   const [editModuleId, setEditModuleId] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [modulesPerPage] = useState(10); // Number of modules per page
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchModules = async () => {
+      setLoading(true);
       const fetchedModules = await fetchModulesByCourseId(courseId);
       setModules(fetchedModules);
+      setLoading(false);
     };
 
     fetchModules();
@@ -81,156 +120,156 @@ const ModulesPage = ({ courseId }) => {
     setModules((prevModules) => prevModules.filter((mod) => mod.id !== moduleId));
   };
 
-  const handlePageChange = (event, value) => {
-    setCurrentPage(value);
-  };
-
   const filteredModules = modules.filter((module) =>
     module.module_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const indexOfLastModule = currentPage * modulesPerPage;
-  const indexOfFirstModule = indexOfLastModule - modulesPerPage;
-  const currentModules = filteredModules.slice(indexOfFirstModule, indexOfLastModule);
+
+  const handleBack = () => {
+    navigate(-1);
+  };
 
   return (
-    <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem', borderRadius: '8px', backgroundColor: '#f7f9fc' }}>
-      <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={3}>
-        Modules
-      </Typography>
+    <StyledContainer maxWidth="md">
+      {/* Header Section */}
+      <Header>
+        <IconButton onClick={handleBack} aria-label="Go back">
+          <ArrowBackIosNewIcon />
+        </IconButton>
+        <Title variant="h5">Modules</Title>
+      </Header>
 
-      <Box mb={3}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search modules..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ backgroundColor: 'white', borderRadius: '4px' }}
-        />
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#2a2a3b', borderRadius: '8px' }}>
-              <TableCell
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  borderBottom: 'none',
-                  padding: '16px',
-                }}
-              >
-                Module Name
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  borderBottom: 'none',
-                  padding: '16px',
-                }}
-              >
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {currentModules.map((module) => (
-              <TableRow key={module.id}>
-                <TableCell
-                  component="th"
-                  scope="row"
-                  sx={{ cursor: 'pointer', color: '#2a2a3b' }}
-                  onClick={() => handleOpenModule(module)}
-                >
-                  {module.module_name}
-                </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Edit Module" placement="top">
-                    <IconButton onClick={() => handleEditModule(module)} sx={{ color: '#1abc9c' }}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete Module" placement="top">
-                    <IconButton onClick={() => handleDeleteModule(module.id)} sx={{ color: '#e74c3c' }}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Pagination
-        count={Math.ceil(filteredModules.length / modulesPerPage)}
-        page={currentPage}
-        onChange={handlePageChange}
-        color="primary"
-        sx={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}
+      {/* Search Bar */}
+      <SearchField
+        variant="outlined"
+        placeholder="Search modules..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        size="small"
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchOutlinedIcon />
+            </InputAdornment>
+          ),
+        }}
+        aria-label="Search modules"
       />
 
-      <Box mt={5}>
-        <Typography variant="h6" color="#2a2a3b" gutterBottom>
-          Create a New Module
-        </Typography>
-        <TextField
-          fullWidth
-          variant="outlined"
-          label="Enter module name"
-          value={newModuleName}
-          onChange={(e) => setNewModuleName(e.target.value)}
-          sx={{ marginBottom: '1rem', backgroundColor: 'white' }}
-          size="small"
-        />
-        <Button
-          variant="contained"
-          sx={{ backgroundColor: '#2a2a3b', color: 'white' }}
-          fullWidth
-          onClick={handleCreateModule}
-          startIcon={<AddCircleOutlineIcon />}
-          size="small"
-        >
-          Create Module
-        </Button>
-      </Box>
+      {/* Loading Indicator */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" height="40vh">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Modules List */}
+          <ModuleList>
+            {filteredModules.length > 0 ? (
+              filteredModules.map((module) => (
+                <ModuleListItem
+                  key={module.id}
+                  button
+                  onClick={() => handleOpenModule(module)}
+                  secondaryAction={
+                    <>
+                      <IconButton
+                        edge="end"
+                        aria-label="edit module"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditModule(module);
+                        }}
+                      >
+                        <EditOutlinedIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        aria-label="delete module"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteModule(module.id);
+                        }}
+                      >
+                        <DeleteOutlineIcon />
+                      </IconButton>
+                    </>
+                  }
+                >
+                  <ListItemText primary={module.module_name} />
+                </ModuleListItem>
+              ))
+            ) : (
+              <Typography variant="body1" color="textSecondary" align="center">
+                No modules found.
+              </Typography>
+            )}
+          </ModuleList>
 
-      {/* Edit Module Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
-        <DialogTitle>Edit Module Name</DialogTitle>
-        <DialogContent sx={{ backgroundColor: '#f7f9fc' }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            label="Module name"
-            value={editModuleName}
-            onChange={(e) => setEditModuleName(e.target.value)}
-            sx={{ backgroundColor: 'white' }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ backgroundColor: '#f7f9fc' }}>
-          <Button onClick={() => setEditDialogOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSaveEditModule} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+          {/* Create Module Section */}
+          <Box mt={5}>
+            <Typography variant="h6" color="textPrimary" gutterBottom>
+              Create a New Module
+            </Typography>
+            <Paper elevation={1} sx={{ padding: 2, borderRadius: '8px' }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Enter module name"
+                value={newModuleName}
+                onChange={(e) => setNewModuleName(e.target.value)}
+                size="small"
+                sx={{ marginBottom: 2, backgroundColor: 'white' }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddCircleOutlineIcon />}
+                onClick={handleCreateModule}
+                sx={{
+                  backgroundColor: '#1976d2',
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                }}
+                fullWidth
+                aria-label="Create new module"
+              >
+                Create Module
+              </Button>
+            </Paper>
+          </Box>
+
+          {/* Edit Module Dialog */}
+          <Dialog
+            open={editDialogOpen}
+            onClose={() => setEditDialogOpen(false)}
+            aria-labelledby="edit-module-dialog-title"
+          >
+            <DialogTitle id="edit-module-dialog-title">Edit Module Name</DialogTitle>
+            <DialogContent>
+              <TextField
+                fullWidth
+                variant="outlined"
+                label="Module name"
+                value={editModuleName}
+                onChange={(e) => setEditModuleName(e.target.value)}
+                size="small"
+                sx={{ marginTop: 1 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditDialogOpen(false)} color="primary">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEditModule} color="primary">
+                Save
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
+    </StyledContainer>
   );
 };
 

@@ -16,6 +16,8 @@ export const fetchQuizzesByModuleId = async (moduleId) => {
 // Add a quiz to a module
 export const addQuizToModule = async (quizData) => {
   try {
+    console.log("Incoming quiz data:", quizData);
+
     const response = await axios.post(`${API_BASE_URL}/quizzes`, quizData);
     return response.data;
   } catch (error) {

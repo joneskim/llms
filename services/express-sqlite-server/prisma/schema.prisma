@@ -8,41 +8,32 @@ datasource db {
 }
 
 model Student {
-  id        String              @id @default(uuid())
-  uniqueId  String              @unique
-  name      String
-  email     String?             @unique
-  password  String
-  courses   Course[]            @relation("StudentCourses")
-  quizResults StudentQuizResult[]
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  id           String              @id @default(uuid())
+  uniqueId     String              @unique
+  name         String
+  email        String?             @unique
+  password     String
+  courses      Course[]            @relation("StudentCourses")
+  quizResults  StudentQuizResult[]
+  notifications Notification[]     @relation("StudentNotifications")
+  readBy       ReadBy[]            @relation("ReadByStudent")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  ReadBy ReadBy[]
 }
 
 model Teacher {
-  id        String    @id @default(uuid())
-  uniqueId  String    @unique
-  name      String
-  email     String    @unique
-  password  String
-  courses   Course[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String          @id @default(uuid())
+  uniqueId      String          @unique
+  name          String
+  email         String          @unique
+  password      String
+  courses       Course[]
+  notifications Notification[]  @relation("TeacherNotifications")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
-
-model CorrectAnswer {
-  id          String   @id @default(uuid())
-  questionId  String   @unique
-  question    Question @relation(fields: [questionId], references: [id])
-  answerText  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-
-
-
-
 
 model Course {
   id          String    @id @default(uuid())
@@ -51,22 +42,22 @@ model Course {
   teacherId   String
   teacher     Teacher   @relation(fields: [teacherId], references: [id])
   students    Student[] @relation("StudentCourses")
-  modules     Module[]  // Established relation
+  modules     Module[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
 model Module {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   module_name String
   description String?
   courseId    String
-  course      Course   @relation(fields: [courseId], references: [id])
+  course      Course      @relation(fields: [courseId], references: [id])
   assignments Assignment[]
   quizzes     Quiz[]
-  tasks       Task[]   // Ensure this line exists
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Task {
@@ -80,12 +71,12 @@ model Task {
   updatedAt DateTime @updatedAt
 }
 
-
-
 model Assignment {
   id              String    @id @default(uuid())
   assignment_name String
   description     String?
+  start_date      DateTime?
+  due_date        DateTime?
   moduleId        String
   module          Module    @relation(fields: [moduleId], references: [id])
   createdAt       DateTime  @default(now())
@@ -93,65 +84,99 @@ model Assignment {
 }
 
 model Quiz {
-  id          String    @id @default(uuid())
-  quiz_name   String
-  description String?
-  moduleId    String
-  module      Module    @relation(fields: [moduleId], references: [id])
+  id           String              @id @default(uuid())
+  quiz_name    String
+  description  String?
+  start_date   DateTime?
+  due_date     DateTime?
+  moduleId     String
+  module       Module              @relation(fields: [moduleId], references: [id])
   averageScore Float?
-  results     StudentQuizResult[]
-  questions   Question[]  // Added relation
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  results      StudentQuizResult[]
+  questions    Question[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 model Question {
-  id          String    @id @default(uuid())
-  text        String
-  quizId      String
-  quiz        Quiz      @relation(fields: [quizId], references: [id])
-  options     Option[]  // Updated relation
-  answers     Answer[]  // Added relation
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String         @id @default(uuid())
+  text          String
+  quizId        String
+  quiz          Quiz           @relation(fields: [quizId], references: [id])
+  options       Option[]
+  answers       Answer[]
   correctAnswer CorrectAnswer?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  text       String
+  correct    Boolean  @default(false)  // Ensure this field exists
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 
-
-model Option {
+model CorrectAnswer {
   id          String    @id @default(uuid())
-  text        String
-  questionId  String
+  answerText  String
+  questionId  String    @unique
   question    Question  @relation(fields: [questionId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
 model StudentQuizResult {
-  id           String   @id @default(uuid())
+  id           String             @id @default(uuid())
   studentId    String
-  student      Student  @relation(fields: [studentId], references: [id])
+  student      Student            @relation(fields: [studentId], references: [id])
   quizId       String
-  quiz         Quiz     @relation(fields: [quizId], references: [id])
+  quiz         Quiz               @relation(fields: [quizId], references: [id])
   score        Int
-  completedAt  DateTime @default(now()) // Added field
+  completedAt  DateTime           @default(now())
   answers      Answer[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
   @@unique([studentId, quizId], name: "studentId_quizId")
 }
 
-
-
 model Answer {
-  id          String   @id @default(uuid()) // Changed from Int to UUID
-  answerText  String
-  questionId  String
-  question    Question @relation(fields: [questionId], references: [id])
+  id           String             @id @default(uuid())
+  answerText   String
+  questionId   String
+  question     Question           @relation(fields: [questionId], references: [id])
   quizResultId String
-  quizResult  StudentQuizResult @relation(fields: [quizResultId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  quizResult   StudentQuizResult  @relation(fields: [quizResultId], references: [id])
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model Notification {
+  id           String      @id @default(uuid())
+  message      String
+  date         DateTime    @default(now())
+  teacherId    String?
+  studentId    String?
+  teacher      Teacher?    @relation("TeacherNotifications", fields: [teacherId], references: [id])
+  student      Student?    @relation("StudentNotifications", fields: [studentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  readBy       ReadBy[]
+}
+
+model ReadBy {
+  id             String        @id @default(uuid())
+  notificationId String
+  studentId      String
+  notification   Notification  @relation(fields: [notificationId], references: [id])
+  student        Student       @relation(fields: [studentId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  Student Student[] @relation("ReadByStudent")
 }

@@ -15,20 +15,46 @@ import {
   TableRow,
   CircularProgress,
   Alert,
+  IconButton,
 } from '@mui/material';
-import { fetchStudentByUniqueId, fetchCoursesByStudentId, fetchQuizzesByStudentInCourse } from '../services/fakeApi';
+import CloseIcon from '@mui/icons-material/Close';
+import {
+  fetchStudentByUniqueId,
+  fetchCoursesByStudentId,
+  fetchQuizzesByStudentInCourse,
+  fetchTasksByCourseId,
+  fetchNotificationsByStudentId,
+  markNotificationAsRead,
+} from '../services/fakeApi';
 
-const StudentQuizAccessPage = () => {
+const StudentTaskAccessPage = () => {
   const [uniqueId, setUniqueId] = useState('');
   const [student, setStudent] = useState(null);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch student data using unique ID and match with enrolled courses
+  // Fetch notifications when the student logs in
+  useEffect(() => {
+    if (student) {
+      fetchNotifications();
+    }
+  }, [student]);
+
+  const fetchNotifications = async () => {
+    try {
+      const notificationsData = await fetchNotificationsByStudentId(student.id);
+      setNotifications(notificationsData);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
   const handleStudentLogin = async () => {
     setLoading(true);
     setError(null);
@@ -37,8 +63,9 @@ const StudentQuizAccessPage = () => {
 
       if (foundStudent) {
         setStudent(foundStudent);
-        const coursesData = await fetchCoursesByStudentId(foundStudent.id); // Fetch only courses the student is enrolled in
+        const coursesData = await fetchCoursesByStudentId(foundStudent.id);
         setCourses(coursesData);
+        fetchNotifications(); // Fetch notifications after login
       } else {
         setError('Student not found.');
       }
@@ -49,23 +76,40 @@ const StudentQuizAccessPage = () => {
     }
   };
 
-  // Handle course selection and fetch quizzes for the selected course
   const handleCourseSelect = async (courseId) => {
+    if (!student || !student.id) {
+      setError('Student information is missing.');
+      return;
+    }
     setSelectedCourse(courseId);
     setLoading(true);
     try {
-      const fetchedQuizzes = await fetchQuizzesByStudentInCourse(courseId); // Fetch quizzes for the student in the selected course
-      setQuizzes(fetchedQuizzes);
+      const fetchedQuizzes = await fetchQuizzesByStudentInCourse(courseId, student.id);
+      const fetchedTasks = await fetchTasksByCourseId(courseId);
+      setQuizzes(Array.isArray(fetchedQuizzes) ? fetchedQuizzes : []);
+      setTasks(Array.isArray(fetchedTasks) ? fetchedTasks : []);
     } catch (err) {
-      setError('Failed to load quizzes.');
+      setError('Failed to load tasks and quizzes.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle quiz selection and navigate to quiz page with student data
-  const handleQuizSelect = (quiz) => {
-    navigate(`/take-quiz/${quiz.id}`, { state: { quiz, student } });
+  const handleTaskSelect = (task, type) => {
+    if (type === 'quiz') {
+      navigate(`/take-quiz/${task.quizId}`, { state: { task, student } });
+    } else if (type === 'assignment') {
+      navigate(`/view-assignment/${task.id}`, { state: { task, student } });
+    }
+  };
+
+  const handleMarkNotificationAsRead = async (notificationId) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      setNotifications(notifications.filter(n => n.id !== notificationId));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
 
   if (loading) {
@@ -87,7 +131,7 @@ const StudentQuizAccessPage = () => {
       }}
     >
       <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={2}>
-        Access Your Quizzes
+        Access Your Tasks
       </Typography>
 
       {!student && (
@@ -117,81 +161,164 @@ const StudentQuizAccessPage = () => {
         </Alert>
       )}
 
-      {student && !selectedCourse && (
+      {student && (
         <>
-          <Typography variant="h6" mb={2}>
-            Select a Course
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
-                  <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Course Name</TableCell>
-                  <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Description</TableCell>
-                  <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {courses.map((course) => (
-                  <TableRow key={course.id}>
-                    <TableCell>{course.course_name}</TableCell>
-                    <TableCell>{course.description}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleCourseSelect(course.id)}
-                        sx={{ backgroundColor: '#1e1e2f', color: '#fff' }}
+          {/* Notifications Section */}
+          <Box mb={3}>
+            <Typography variant="h6" mb={2}>
+              Notifications
+            </Typography>
+            {notifications.length > 0 ? (
+              <Box sx={{ marginBottom: 3 }}>
+                {notifications.map((notification) => (
+                  <Alert
+                    key={notification.id}
+                    severity="info"
+                    action={
+                      <IconButton
+                        size="small"
+                        onClick={() => handleMarkNotificationAsRead(notification.id)}
                       >
-                        Select
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                        <CloseIcon fontSize="inherit" />
+                      </IconButton>
+                    }
+                    sx={{ marginBottom: 2 }}
+                  >
+                    {notification.message}
+                  </Alert>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </>
-      )}
+              </Box>
+            ) : (
+              <Alert severity="info">No new notifications.</Alert>
+            )}
+          </Box>
 
-      {selectedCourse && (
-        <>
-          <Typography variant="h6" mt={3} mb={2}>
-            Available Quizzes
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
-                  <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Quiz Name</TableCell>
-                  <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Description</TableCell>
-                  <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {quizzes.map((quiz) => (
-                  <TableRow key={quiz.id}>
-                    <TableCell>{quiz.quiz_name}</TableCell>
-                    <TableCell>{quiz.description}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleQuizSelect(quiz)}
-                        sx={{ backgroundColor: '#1e1e2f', color: '#fff' }}
-                      >
-                        Start Quiz
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {!selectedCourse && (
+            <>
+              <Typography variant="h6" mb={2}>
+                Select a Course
+              </Typography>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Course Name</TableCell>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Description</TableCell>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {courses.map((course) => (
+                      <TableRow key={course.id}>
+                        <TableCell>{course.course_name}</TableCell>
+                        <TableCell>{course.description}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleCourseSelect(course.id)}
+                            sx={{ backgroundColor: '#1e1e2f', color: '#fff' }}
+                          >
+                            Select
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+
+          {selectedCourse && (
+            <>
+              {/* Quizzes Table */}
+              <Typography variant="h6" mt={3} mb={2}>
+                Available Quizzes
+              </Typography>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Quiz Name</TableCell>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {quizzes.length > 0 ? (
+                      quizzes.map((quiz) => (
+                        <TableRow key={quiz.quizId}>
+                          <TableCell>{quiz.quizName}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={() => handleTaskSelect(quiz, 'quiz')}
+                              sx={{ backgroundColor: '#1e1e2f', color: '#fff' }}
+                            >
+                              {quiz.score !== null ? 'Retake Quiz' : 'Start Quiz'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow key="no-quizzes">
+                        <TableCell colSpan={2} sx={{ textAlign: 'center', padding: '1rem' }}>
+                          No quizzes available.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Tasks Table */}
+              <Typography variant="h6" mt={3} mb={2}>
+                Available Tasks
+              </Typography>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#2a2a3b' }}>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Task Name</TableCell>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Description</TableCell>
+                      <TableCell sx={{ color: '#fff', fontWeight: 'bold' }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {tasks.length > 0 ? (
+                      tasks.map((task) => (
+                        <TableRow key={task.id}>
+                          <TableCell>{task.taskName}</TableCell>
+                          <TableCell>{task.description}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={() => handleTaskSelect(task, 'assignment')}
+                              sx={{ backgroundColor: '#1e1e2f', color: '#fff' }}
+                            >
+                              View Task
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow key="no-tasks">
+                        <TableCell colSpan={3} sx={{ textAlign: 'center', padding: '1rem' }}>
+                          No tasks available.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
         </>
       )}
     </Container>
   );
 };
 
-export default StudentQuizAccessPage;
+export default StudentTaskAccessPage;

@@ -34,3 +34,24 @@ export const fetchStudentsByCourseId = async (courseId) => {
     return [];
   }
 };
+
+export const fetchNotificationsByStudentId = async (studentId) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/students/${studentId}/notifications`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching notifications by student ID:', error);
+    return [];
+  }
+};
+
+// Mark notification as read
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const response = await axios.patch(`${API_BASE_URL}/students/notifications/${notificationId}/read`);
+    return response.data;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw error;
+  }
+};

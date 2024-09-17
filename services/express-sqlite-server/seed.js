@@ -1,7 +1,5 @@
-// seed.js
-
 const { PrismaClient } = require('@prisma/client');
-const { faker } = require('@faker-js/faker'); // Updated import
+const { faker } = require('@faker-js/faker');
 const prisma = new PrismaClient();
 
 async function main() {
@@ -10,14 +8,16 @@ async function main() {
 
     // 1. Delete Existing Data in Reverse Order of Dependencies
     console.log('🗑️ Deleting existing data...');
+    await prisma.answer.deleteMany();
     await prisma.studentQuizResult.deleteMany();
     await prisma.correctAnswer.deleteMany();
-    await prisma.answer.deleteMany();
     await prisma.option.deleteMany();
     await prisma.question.deleteMany();
     await prisma.quiz.deleteMany();
+    await prisma.assignment.deleteMany();
     await prisma.module.deleteMany();
     await prisma.course.deleteMany();
+    await prisma.notification.deleteMany();
     await prisma.student.deleteMany();
     await prisma.teacher.deleteMany();
     console.log('✅ Existing data deleted.');
@@ -29,32 +29,9 @@ async function main() {
         uniqueId: 'teacher001',
         name: 'Mr. John Anderson',
         email: 'john.anderson@example.com',
-        password: 'hashedpassword1',
+        password: 'hashedpassword1', // Use a real hash in production
       },
-      {
-        uniqueId: 'teacher002',
-        name: 'Ms. Emily Thompson',
-        email: 'emily.thompson@example.com',
-        password: 'hashedpassword2',
-      },
-      {
-        uniqueId: 'teacher003',
-        name: 'Dr. Michael Brown',
-        email: 'michael.brown@example.com',
-        password: 'hashedpassword3',
-      },
-      {
-        uniqueId: 'teacher004',
-        name: 'Mrs. Sarah Davis',
-        email: 'sarah.davis@example.com',
-        password: 'hashedpassword4',
-      },
-      {
-        uniqueId: 'teacher005',
-        name: 'Prof. William Garcia',
-        email: 'william.garcia@example.com',
-        password: 'hashedpassword5',
-      },
+      // Add more teachers as needed
     ];
 
     const teachers = [];
@@ -72,7 +49,7 @@ async function main() {
     for (let i = 1; i <= 50; i++) {
       studentData.push({
         uniqueId: `student${i.toString().padStart(3, '0')}`,
-        name: faker.person.fullName(), // Updated method
+        name: faker.person.fullName(),
         email: faker.internet.email(),
         password: faker.internet.password(),
       });
@@ -92,27 +69,7 @@ async function main() {
     const courseNames = [
       'Physics 101',
       'Chemistry 101',
-      'Mathematics 101',
-      'Biology 101',
-      'Computer Science 101',
-      'History 101',
-      'Literature 101',
-      'Art 101',
-      'Economics 101',
-      'Philosophy 101',
-    ];
-
-    const courseDescriptions = [
-      'Introduction to fundamental concepts in Physics.',
-      'Basic principles and theories of Chemistry.',
-      'Foundational topics in Mathematics.',
-      'Exploring the basics of Biology.',
-      'Introduction to Computer Science and programming.',
-      'Overview of historical events and movements.',
-      'Study of classical and modern literature.',
-      'Fundamentals of Art and design.',
-      'Introduction to Economics and market structures.',
-      'Exploration of philosophical thoughts and theories.',
+      // Add more courses as needed
     ];
 
     const courses = [];
@@ -120,8 +77,8 @@ async function main() {
       const course = await prisma.course.create({
         data: {
           course_name: courseNames[i],
-          description: courseDescriptions[i],
-          teacherId: teachers[i % teachers.length].id, // Assign teachers in a round-robin fashion
+          description: `${courseNames[i]} Description`,
+          teacherId: teachers[i % teachers.length].id,
         },
       });
       courses.push(course);
@@ -131,8 +88,7 @@ async function main() {
     // 5. Enroll Students in Courses
     console.log('🔗 Enrolling Students in Courses...');
     for (const course of courses) {
-      // Randomly select 20-30 students to enroll in each course
-      const numberOfStudents = faker.number.int({ min: 20, max: 30 }); // Updated method
+      const numberOfStudents = faker.number.int({ min: 20, max: 30 });
       const shuffledStudents = faker.helpers.shuffle(students);
       const enrolledStudents = shuffledStudents.slice(0, numberOfStudents);
 
@@ -151,7 +107,7 @@ async function main() {
     console.log('📦 Seeding Modules...');
     const modules = [];
     for (const course of courses) {
-      const numberOfModules = faker.number.int({ min: 3, max: 5 }); // Updated method
+      const numberOfModules = faker.number.int({ min: 3, max: 5 });
       for (let i = 1; i <= numberOfModules; i++) {
         const module = await prisma.module.create({
           data: {
@@ -169,14 +125,18 @@ async function main() {
     console.log('📝 Seeding Quizzes...');
     const quizzes = [];
     for (const module of modules) {
-      const numberOfQuizzes = faker.number.int({ min: 2, max: 4 }); // Updated method
+      const numberOfQuizzes = faker.number.int({ min: 2, max: 4 });
       for (let i = 1; i <= numberOfQuizzes; i++) {
+        const startDate = faker.date.past({ years: 1 });
+        const dueDate = faker.date.future({ years: 1, refDate: startDate });
         const quiz = await prisma.quiz.create({
           data: {
             quiz_name: `${module.module_name} - Quiz ${i}`,
             description: faker.lorem.sentences(),
             moduleId: module.id,
-            averageScore: null, // Initialize averageScore as null; it can be updated later
+            averageScore: null,
+            start_date: startDate,
+            due_date: dueDate,
           },
         });
         quizzes.push(quiz);
@@ -184,11 +144,33 @@ async function main() {
       }
     }
 
-    // 8. Seed Questions
+    // 8. Seed Assignments
+    console.log('📝 Seeding Assignments...');
+    const assignments = [];
+    for (const module of modules) {
+      const numberOfAssignments = faker.number.int({ min: 1, max: 3 });
+      for (let i = 1; i <= numberOfAssignments; i++) {
+        const startDate = faker.date.past({ years: 1 });
+        const dueDate = faker.date.future({ years: 1, refDate: startDate });
+        const assignment = await prisma.assignment.create({
+          data: {
+            assignment_name: `${module.module_name} - Assignment ${i}`,
+            description: faker.lorem.sentences(),
+            moduleId: module.id,
+            start_date: startDate,
+            due_date: dueDate,
+          },
+        });
+        assignments.push(assignment);
+        console.log(`✅ Assignment seeded: ${assignment.assignment_name}`);
+      }
+    }
+
+    // 9. Seed Questions
     console.log('❓ Seeding Questions...');
     const questions = [];
     for (const quiz of quizzes) {
-      const numberOfQuestions = faker.number.int({ min: 5, max: 15 }); // Updated method
+      const numberOfQuestions = faker.number.int({ min: 5, max: 15 });
       for (let i = 1; i <= numberOfQuestions; i++) {
         const question = await prisma.question.create({
           data: {
@@ -201,7 +183,7 @@ async function main() {
       }
     }
 
-    // 9. Seed Options and Correct Answers
+    // 10. Seed Options and Correct Answers
     console.log('🗂️ Seeding Options and Correct Answers...');
     for (const question of questions) {
       const optionsForQuestion = [];
@@ -217,48 +199,43 @@ async function main() {
         console.log(`✅ Option seeded: "${option.text}" for Question ID: ${question.id}`);
       }
 
-      // Assign one CorrectAnswer per Question
-      const correctOption = faker.helpers.arrayElement(optionsForQuestion);
-      const correctAnswer = await prisma.correctAnswer.create({
+      // Assign the first option as the CorrectAnswer for the Question
+      await prisma.correctAnswer.create({
         data: {
           questionId: question.id,
-          answerText: correctOption.text,
+          answerText: optionsForQuestion[0].text,
         },
       });
       console.log(`✅ Correct Answer seeded for Question ID: ${question.id}`);
     }
 
-    // 10. Seed StudentQuizResults
+    // 11. Seed StudentQuizResults
     console.log('📊 Seeding Student Quiz Results...');
     for (const student of students) {
-      // Each student takes 10-20 quizzes randomly
-      const numberOfQuizzesTaken = faker.number.int({ min: 10, max: 20 }); // Updated method
+      const numberOfQuizzesTaken = faker.number.int({ min: 10, max: 20 });
       const shuffledQuizzes = faker.helpers.shuffle(quizzes);
       const takenQuizzes = shuffledQuizzes.slice(0, numberOfQuizzesTaken);
 
       for (const quiz of takenQuizzes) {
-        // Check if the student is enrolled in the course that the quiz belongs to
-        const courseId = await prisma.quiz.findUnique({
-          where: { id: quiz.id },
-          select: { module: { select: { courseId: true } } },
-        }).then(res => res.module.courseId);
+        const module = await prisma.module.findUnique({
+          where: { id: quiz.moduleId },
+          select: { courseId: true },
+        });
 
         const isEnrolled = await prisma.course.findFirst({
           where: {
-            id: courseId,
+            id: module.courseId,
             students: { some: { id: student.id } },
           },
         });
 
         if (!isEnrolled) {
-          // Skip if the student is not enrolled in the course
           continue;
         }
 
-        // Check for existing StudentQuizResult to prevent duplicates
         const existingQuizResult = await prisma.studentQuizResult.findUnique({
           where: {
-            studentId_quizId: { // Must match the unique constraint name
+            studentId_quizId: {
               studentId: student.id,
               quizId: quiz.id,
             },
@@ -266,25 +243,57 @@ async function main() {
         });
 
         if (existingQuizResult) {
-          continue; // Skip if already exists
+          continue;
         }
 
-        const score = faker.number.int({ min: 0, max: 100 }); // Updated method
-        const completedAt = faker.date.past({ years: 1 }); // Updated method
+        const score = faker.number.int({ min: 0, max: 100 });
+        const completedAt = faker.date.past({ years: 1 });
 
-        const quizResult = await prisma.studentQuizResult.create({
+        const answersData = await generateAnswersForQuiz(quiz.id, score);
+
+        await prisma.studentQuizResult.create({
           data: {
             studentId: student.id,
             quizId: quiz.id,
             score,
             completedAt,
             answers: {
-              create: await generateAnswersForQuiz(quiz.id, score),
+              create: answersData,
             },
           },
         });
 
         console.log(`✅ Quiz Result seeded for Student ID: ${student.id}, Quiz ID: ${quiz.id}, Score: ${score}`);
+      }
+    }
+
+    // 12. Seed Notifications
+    console.log('🔔 Seeding Notifications...');
+    for (const teacher of teachers) {
+      const numNotifications = faker.number.int({ min: 1, max: 5 });
+      for (let i = 0; i < numNotifications; i++) {
+        await prisma.notification.create({
+          data: {
+            message: faker.lorem.sentence(),
+            date: faker.date.recent(),
+            teacherId: teacher.id,
+          },
+        });
+        console.log(`✅ Notification seeded for Teacher ID: ${teacher.id}`);
+      }
+    }
+
+    for (const student of students) {
+      const numNotifications = faker.number.int({ min: 1, max: 5 });
+      for (let i = 0; i < numNotifications; i++) {
+        await prisma.notification.create({
+          data: {
+            message: faker.lorem.sentence(),
+            date: faker.date.recent(),
+            studentId: student.id,
+          },
+        });
+        console.log(`✅ Notification seeded for Student ID: ${student.id}`);
       }
     }
 
@@ -298,20 +307,15 @@ async function main() {
 
 // Helper function to generate answers for a quiz based on score
 async function generateAnswersForQuiz(quizId, score) {
-  // Fetch all questions and their correct answers for the quiz
   const questions = await prisma.question.findMany({
     where: { quizId },
     include: { correctAnswer: true, options: true },
   });
 
-  // Determine the number of correct answers based on score
   const totalQuestions = questions.length;
   const correctAnswersCount = Math.round((score / 100) * totalQuestions);
 
-  // Shuffle questions
   const shuffledQuestions = faker.helpers.shuffle(questions);
-
-  // Select questions that will be answered correctly
   const correctlyAnsweredQuestions = shuffledQuestions.slice(0, correctAnswersCount);
 
   const answersData = [];
@@ -319,11 +323,11 @@ async function generateAnswersForQuiz(quizId, score) {
   for (const question of questions) {
     let answerText;
     if (correctlyAnsweredQuestions.includes(question)) {
-      // Correct answer
       answerText = question.correctAnswer.answerText;
     } else {
-      // Incorrect answer: select a random option that's not the correct one
-      const incorrectOptions = question.options.filter(opt => opt.text !== question.correctAnswer.answerText);
+      const incorrectOptions = question.options.filter(
+        (opt) => opt.text !== question.correctAnswer.answerText
+      );
       const randomIncorrectOption = faker.helpers.arrayElement(incorrectOptions);
       answerText = randomIncorrectOption.text;
     }

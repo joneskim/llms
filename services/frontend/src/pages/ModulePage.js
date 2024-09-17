@@ -5,25 +5,60 @@ import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
+  CircularProgress,
   IconButton,
-  Tooltip,
   TextField,
   InputAdornment,
-  Pagination,
-  List, ListItem, ListItemText,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import QuizIcon from '@mui/icons-material/Quiz';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import EditIcon from '@mui/icons-material/Edit';
-import SearchIcon from '@mui/icons-material/Search';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import { fetchModulesByCourseId, fetchQuizzesByModuleId, fetchAssignmentsByModuleId } from '../services/fakeApi';
+
+const StyledContainer = styled(Container)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  padding: theme.spacing(4),
+  borderRadius: theme.shape.borderRadius * 2,
+  backgroundColor: theme.palette.background.paper,
+}));
+
+const Header = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+  display: 'flex',
+  alignItems: 'center',
+}));
+
+const Title = styled(Typography)(({ theme }) => ({
+  flexGrow: 1,
+  fontWeight: theme.typography.fontWeightBold,
+  color: theme.palette.text.primary,
+}));
+
+const SearchField = styled(TextField)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  backgroundColor: theme.palette.background.default,
+  borderRadius: theme.shape.borderRadius,
+}));
+
+const QuizList = styled(List)(({ theme }) => ({
+  width: '100%',
+  backgroundColor: theme.palette.background.paper,
+}));
+
+const QuizListItem = styled(ListItem)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius,
+  marginBottom: theme.spacing(1),
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
 
 const ModulePage = () => {
   const navigate = useNavigate();
@@ -35,16 +70,23 @@ const ModulePage = () => {
 
   const [quizzes, setQuizzes] = useState([]);
   const [performance, setPerformance] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [quizzesPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadModuleData = async () => {
       if (!module.id) {
-        const modules = await fetchModulesByCourseId(usedCourseId);
-        const foundModule = modules.find((mod) => mod.id === Number(usedModuleId));
-        setModule(foundModule);
+        try {
+          const modules = await fetchModulesByCourseId(usedCourseId);
+          const foundModule = modules.find((mod) => mod.id === usedModuleId);
+          if (foundModule) {
+            setModule(foundModule);
+          } else {
+            console.error('Module not found');
+          }
+        } catch (error) {
+          console.error('Error fetching modules:', error);
+        }
       }
     };
 
@@ -52,24 +94,37 @@ const ModulePage = () => {
   }, [usedCourseId, usedModuleId, module]);
 
   useEffect(() => {
-    if (module.id) {
-      const loadData = async () => {
-        const quizzesData = await fetchQuizzesByModuleId(module.id);
-        setQuizzes(quizzesData);
+    const loadData = async () => {
+      if (module.id) {
+        try {
+          setLoading(true);
+          const quizzesData = await fetchQuizzesByModuleId(module.id);
 
-        const assignments = await fetchAssignmentsByModuleId(module.id);
-        setPerformance(calculatePerformance(assignments, quizzesData));
-      };
+          // Sort quizzes by creation date descending (newest first)
+          const sortedQuizzes = quizzesData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      loadData();
-    }
+          setQuizzes(sortedQuizzes);
+
+          const assignments = await fetchAssignmentsByModuleId(module.id);
+          setPerformance(calculatePerformance(assignments, sortedQuizzes));
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
   }, [module]);
 
   const calculatePerformance = (assignments, quizzes) => {
     const totalScores = [...assignments, ...quizzes].map((item) => item.score || 0);
-    const overallAverage = totalScores.length ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length) : 0;
-    const highestScore = Math.max(...totalScores);
-    const lowestScore = Math.min(...totalScores);
+    const overallAverage = totalScores.length
+      ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
+      : 0;
+    const highestScore = totalScores.length ? Math.max(...totalScores) : 0;
+    const lowestScore = totalScores.length ? Math.min(...totalScores) : 0;
 
     return {
       overallAverage,
@@ -78,15 +133,9 @@ const ModulePage = () => {
     };
   };
 
-  const indexOfLastQuiz = currentPage * quizzesPerPage;
-  const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
-  const currentQuizzes = quizzes
-    .filter((quiz) => quiz.quiz_name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .slice(indexOfFirstQuiz, indexOfLastQuiz);
-
-  const handlePageChange = (event, value) => {
-    setCurrentPage(value);
-  };
+  const filteredQuizzes = quizzes.filter((quiz) =>
+    quiz.quiz_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleEditQuiz = (quiz) => {
     navigate(`/course/${usedCourseId}/modules/${usedModuleId}/edit-quiz/${quiz.id}`, {
@@ -106,134 +155,134 @@ const ModulePage = () => {
     });
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem', borderRadius: '8px', backgroundColor: '#f7f9fc' }}>
-      <Typography variant="h4" color="#2a2a3b" fontWeight="bold" mb={3}>
-        Quizzes for {module.module_name}
-      </Typography>
+    <StyledContainer maxWidth="md">
+      {/* Header Section */}
+      <Header>
+        <IconButton onClick={handleBack} aria-label="Go back">
+          <ArrowBackIosNewIcon />
+        </IconButton>
+        <Title variant="h5">Quizzes for {module.module_name}</Title>
+      </Header>
 
-      <Box mb={3}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search quizzes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ backgroundColor: 'white', borderRadius: '4px' }}
-        />
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#2a2a3b', borderRadius: '8px' }}>
-              <TableCell
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  borderBottom: 'none',
-                  padding: '16px',
-                }}
-              >
-                Quiz Title
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  borderBottom: 'none',
-                  padding: '16px',
-                }}
-              >
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {currentQuizzes.map((quiz) => (
-              <TableRow key={quiz.id}>
-                <TableCell
-                  component="th"
-                  scope="row"
-                  sx={{ cursor: 'pointer', color: '#2a2a3b' }}
-                  onClick={() => handleTakeQuiz(quiz)}
-                >
-                  {quiz.quiz_name}
-                </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Edit Quiz" placement="top">
-                    <IconButton onClick={() => handleEditQuiz(quiz)} sx={{ color: '#1abc9c' }}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Pagination
-        count={Math.ceil(quizzes.length / quizzesPerPage)}
-        page={currentPage}
-        onChange={handlePageChange}
-        color="primary"
-        sx={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}
+      {/* Search Bar */}
+      <SearchField
+        variant="outlined"
+        placeholder="Search quizzes..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        size="small"
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchOutlinedIcon />
+            </InputAdornment>
+          ),
+        }}
+        aria-label="Search quizzes"
       />
 
-      <Button
-        variant="contained"
-        startIcon={<QuizIcon />}
-        onClick={handleCreateQuiz}
-        sx={{
-          backgroundColor: '#2a2a3b',
-          color: 'white',
-          marginTop: '2rem',
-          boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
-        }}
-        fullWidth
-        size="large"
-      >
-        Create Quiz for this Module
-      </Button>
+      {/* Loading Indicator */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" height="40vh">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Quizzes List */}
+          <QuizList>
+            {filteredQuizzes.length > 0 ? (
+              filteredQuizzes.map((quiz) => (
+                <QuizListItem
+                  key={quiz.id}
+                  button
+                  onClick={() => handleTakeQuiz(quiz)}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      aria-label="edit quiz"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditQuiz(quiz);
+                      }}
+                    >
+                      <EditOutlinedIcon />
+                    </IconButton>
+                  }
+                >
+                  <ListItemText primary={quiz.quiz_name} />
+                </QuizListItem>
+              ))
+            ) : (
+              <Typography variant="body1" color="textSecondary" align="center">
+                No quizzes found.
+              </Typography>
+            )}
+          </QuizList>
 
-      <Typography variant="h5" color="#2a2a3b" fontWeight="bold" mt={5} mb={2}>
-        Performance Overview
-      </Typography>
+          {/* Create Quiz Button */}
+          <Button
+            variant="contained"
+            startIcon={<QuizIcon />}
+            onClick={handleCreateQuiz}
+            sx={{
+              backgroundColor: '#1976d2',
+              color: '#fff',
+              marginTop: 3,
+              textTransform: 'none',
+              fontWeight: 'bold',
+              padding: '12px 24px',
+              borderRadius: '8px',
+            }}
+            fullWidth
+            aria-label="Create new quiz"
+          >
+            Create New Quiz
+          </Button>
 
-      <Paper elevation={0} sx={{ padding: '1rem', backgroundColor: '#fff' }}>
-        <List>
-          {performance ? (
-            <>
-              <ListItem>
-                <ListItemText primary={`Overall Average: ${performance.overallAverage.toFixed(2)}%`} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary={`Highest Score: ${performance.highestScore}%`} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary={`Lowest Score: ${performance.lowestScore}%`} />
-              </ListItem>
-            </>
-          ) : (
-            <Typography variant="body1" color="#2a2a3b">
-              No performance data available.
+          {/* Performance Overview */}
+          <Box mt={5}>
+            <Typography variant="h6" color="textPrimary" fontWeight="bold" gutterBottom>
+              Performance Overview
             </Typography>
-          )}
-        </List>
-      </Paper>
-    </Container>
+            <Paper elevation={1} sx={{ padding: 2, borderRadius: '8px' }}>
+              {performance ? (
+                <List disablePadding>
+                  <ListItem disableGutters>
+                    <ListItemText primary="Overall Average" />
+                    <Typography variant="subtitle1" color="textSecondary">
+                      {performance.overallAverage}%
+                    </Typography>
+                  </ListItem>
+                  <Divider />
+                  <ListItem disableGutters>
+                    <ListItemText primary="Highest Score" />
+                    <Typography variant="subtitle1" color="textSecondary">
+                      {performance.highestScore}%
+                    </Typography>
+                  </ListItem>
+                  <Divider />
+                  <ListItem disableGutters>
+                    <ListItemText primary="Lowest Score" />
+                    <Typography variant="subtitle1" color="textSecondary">
+                      {performance.lowestScore}%
+                    </Typography>
+                  </ListItem>
+                </List>
+              ) : (
+                <Typography variant="body1" color="textSecondary">
+                  No performance data available.
+                </Typography>
+              )}
+            </Paper>
+          </Box>
+        </>
+      )}
+    </StyledContainer>
   );
 };
 

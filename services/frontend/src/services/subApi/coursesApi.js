@@ -89,3 +89,13 @@ export const fetchAllQuizResultsForCourse = async (courseId) => {
       return [];
     }
   };
+
+  export const fetchNotificationsByTeacherId = async (teacherId) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/teachers/${teacherId}/notifications/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+  };

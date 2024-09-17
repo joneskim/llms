@@ -48,16 +48,18 @@ const QuizCreatePage = () => {
         const quiz = await fetchQuizById(quizId);
         setQuizTitle(quiz.quiz_name);
         setQuizDescription(quiz.description);
-        setStartDate(quiz.startDate ? new Date(quiz.startDate) : null);
-        setDueDate(quiz.dueDate ? new Date(quiz.dueDate) : null);
+        setStartDate(quiz.start_date ? new Date(quiz.start_date) : null);
+        setDueDate(quiz.due_date ? new Date(quiz.due_date) : null);
         setQuizLength(quiz.quiz_length || '');
         setQuestions(
           quiz.questions.map((q) => ({
-            text: q.question_text,
-            textAnswer: q.textAnswer || '',
-            options: q.options.map((opt) => opt.answer_text),
-            correctIndex: q.options.findIndex((opt) => opt.correct === 1),
-            type: q.question_type,
+            text: q.text,
+            textAnswer: q.correctAnswer?.answerText || '',
+            options: q.options ? q.options.map((opt) => opt.text) : ['', '', '', ''],
+            correctIndex: q.options
+              ? q.options.findIndex((opt) => opt.correct === true)
+              : 0,
+            type: q.type || 'multipleChoice',
           }))
         );
         setIsEditing(true);
@@ -117,50 +119,59 @@ const QuizCreatePage = () => {
 
   const handleSubmit = async () => {
     if (module && quizTitle) {
-        const formattedQuestions = questions.map((q) => ({
-            question_text: q.text,
-            question_type: q.type,
-            textAnswer: q.type === 'textAnswer' ? q.textAnswer : undefined,
-            options: q.type === 'multipleChoice'
-                ? q.options.map((opt, index) => ({
-                    answer_text: opt,
-                    correct: q.correctIndex === index,
-                }))
-                : undefined,
-        }));
-        
-        const quizPayload = {
-            module_id: moduleId,
-            quiz_name: quizTitle,
-            description: quizDescription,
-            questions: formattedQuestions,
-            start_date: startDate ? startDate.toISOString() : null,
-            due_date: dueDate ? dueDate.toISOString() : null,
-            quiz_length: quizLength,
-        };
+      const formattedQuestions = questions.map((q) => ({
+        text: q.text,
+        type: q.type,
+        textAnswer: q.type === 'textAnswer' ? q.textAnswer : undefined,
+        options: q.type === 'multipleChoice'
+          ? q.options.map((opt, index) => ({
+              text: opt,
+              correct: q.correctIndex === index,  // Mark the correct option
+            }))
+          : undefined,
+      }));
 
-        try {
-            if (isEditing) {
-                await updateQuizInModule(parseInt(quizId), quizPayload);
-            } else {
-                await addQuizToModule(quizPayload);
-            }
+      const quizPayload = {
+        module_id: moduleId,
+        quiz_name: quizTitle,
+        description: quizDescription,
+        questions: formattedQuestions,
+        start_date: startDate ? startDate.toISOString() : null,
+        due_date: dueDate ? dueDate.toISOString() : null,
+        quiz_length: quizLength,
+      };
 
-            navigate(`/course/${courseId}/modules/${moduleId}`, {
-                state: { module: { ...module }, course_id: courseId },
-            });
-        } catch (error) {
-            console.error('Error saving quiz:', error);
-            alert('An error occurred while saving the quiz.');
+      try {
+        if (isEditing) {
+          console.log('Updating quiz:', quizPayload);
+          await updateQuizInModule(quizId, quizPayload);
+        } else {
+          await addQuizToModule(quizPayload);
         }
-    } else {
-        alert('Please provide a quiz title.');
-    }
-};
 
+        navigate(`/course/${courseId}/modules/${moduleId}`, {
+          state: { module: { ...module }, course_id: courseId },
+        });
+      } catch (error) {
+        console.error('Error saving quiz:', error);
+        alert('An error occurred while saving the quiz.');
+      }
+    } else {
+      alert('Please provide a quiz title.');
+    }
+  };
 
   return (
-    <Container maxWidth="md" sx={{ marginTop: '2rem', padding: '2rem', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)' }}>
+    <Container
+      maxWidth="md"
+      sx={{
+        marginTop: '2rem',
+        padding: '2rem',
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+      }}
+    >
       <Typography variant="h5" color="#2c3e50" fontWeight="bold" gutterBottom>
         {isEditing ? `Edit Quiz: ${quizTitle}` : `Create Quiz for ${module?.module_name}`}
       </Typography>

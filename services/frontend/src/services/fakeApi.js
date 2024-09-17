@@ -29,6 +29,8 @@ export {
     fetchStudentById,
     fetchStudentByUniqueId,
     fetchStudentsByCourseId, // Ensure this is exported
+    fetchNotificationsByStudentId,
+    markNotificationAsRead,
   } from './subApi/studentsApi';
   
   export {
@@ -38,7 +40,8 @@ export {
     fetchModuleById,
     fetchModulesByCourseId,
     fetchCoursesByStudentId, // Ensure this is exported
-    fetchAllQuizResultsForCourse
+    fetchAllQuizResultsForCourse,
+    fetchNotificationsByTeacherId 
   } from './subApi/coursesApi';
   
   export { validateTeacherLogin } from './subApi/loginApi';

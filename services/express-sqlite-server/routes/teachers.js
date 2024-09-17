@@ -75,4 +75,19 @@ router.delete('/:teacherId', async (req, res) => {
   }
 });
 
+// Example using Express.js
+router.get('/:teacherId/notifications', async (req, res) => {
+  const { teacherId } = req.params;
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { teacherId },
+      orderBy: { date: 'desc' },
+    });
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
+
 module.exports = router;

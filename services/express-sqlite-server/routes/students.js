@@ -102,4 +102,34 @@ router.get('/uniqueId/:uniqueId', async (req, res) => {
     }
   });
 
+  router.get('/:studentId/notifications/', async (req, res) => {
+    const { studentId } = req.params;
+    try {
+      const notifications = await prisma.notification.findMany({
+        where: { studentId },
+        orderBy: { date: 'desc' },
+      });
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+  });
+
+  // Assuming Express.js backend
+
+
+router.patch('/notifications/:notificationId/read', async (req, res) => {
+  const { notificationId } = req.params;
+  try {
+    console.log(notificationId);
+    await Notification.findByIdAndUpdate(notificationId, { read: true });
+
+    res.status(200).json({ message: 'Notification marked as read' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+  
+
 module.exports = router;
