@@ -11,8 +11,6 @@ model Student {
   id           String              @id @default(uuid())
   uniqueId     String              @unique
   name         String
-  email        String?             @unique
-  password     String
   courses      Course[]            @relation("StudentCourses")
   quizResults  StudentQuizResult[]
   notifications Notification[]     @relation("StudentNotifications")

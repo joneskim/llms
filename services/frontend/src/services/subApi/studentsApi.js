@@ -60,9 +60,14 @@ export const markNotificationAsRead = async (notificationId) => {
 export const addStudent = async (studentData) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/students`, studentData);
+    console.log('Student added successfully:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error adding student:', error);
-    throw error;
+    console.error('Error adding student:', error.response?.data || error.message);
+    throw error;  // Re-throw the error after logging it
   }
-}
+};
+
+
+
+

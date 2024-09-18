@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // Ensure useState is imported
 import {
   Modal,
   Box,
@@ -7,17 +7,18 @@ import {
   Button,
   IconButton,
   Fade,
-} from '@mui/material';
+  Grid,
+} from '@mui/material'; // Ensure all material UI components are imported
 import { styled } from '@mui/material/styles';
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from '@mui/icons-material/Close'; // Ensure CloseIcon is imported
 
-// Styled components
+// Styled Components
 const ModalContainer = styled(Box)(({ theme }) => ({
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
+  width: 500,
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[5],
@@ -31,35 +32,23 @@ const Header = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
-// Function to generate a 6-character alphanumeric ID
-const generateUniqueId = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let uniqueId = '';
-  for (let i = 0; i < 6; i++) {
-    uniqueId += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return uniqueId;
-};
-
 const AddStudentModal = ({ open, onClose, onAddStudent }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [uniqueId, setUniqueId] = useState('');
-
-  // Generate a unique ID when the modal opens
-  useEffect(() => {
-    if (open) {
-      setUniqueId(generateUniqueId());
-    }
-  }, [open]);
+  const [studentName, setStudentName] = useState('');
 
   const handleAddStudent = () => {
-    if (name && email) {
-      onAddStudent({ name, email, uniqueId });
-      onClose();
-    } else {
-      alert('Please fill in all fields.');
+    if (studentName.trim() === '') {
+      alert('Please fill in the student name.');
+      return;
     }
+
+    // Pass the name to the onAddStudent function
+    onAddStudent({
+      name: studentName.trim(),
+    });
+
+    // Clear input after submission
+    setStudentName('');
+    onClose();
   };
 
   return (
@@ -72,28 +61,18 @@ const AddStudentModal = ({ open, onClose, onAddStudent }) => {
               <CloseIcon />
             </IconButton>
           </Header>
-          <TextField
-            fullWidth
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Unique ID"
-            value={uniqueId}
-            margin="normal"
-            disabled
-          />
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Student Name"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                variant="outlined"
+                required
+              />
+            </Grid>
+          </Grid>
           <Box mt={3} display="flex" justifyContent="flex-end">
             <Button variant="contained" color="primary" onClick={handleAddStudent}>
               Add Student

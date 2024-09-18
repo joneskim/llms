@@ -1,3 +1,5 @@
+// TakeQuizPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -12,7 +14,6 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  LinearProgress,
   List,
   ListItem,
   ListItemText,
@@ -25,7 +26,75 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import DoneIcon from '@mui/icons-material/Done';
+import { styled } from '@mui/material/styles';
 import { fetchQuizById, submitQuiz, fetchStudentQuizResults } from '../services/fakeApi';
+
+// Styled Components
+
+const StyledContainer = styled(Container)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  padding: theme.spacing(4),
+  backgroundColor: '#ffffff', // White background
+  borderRadius: '12px',
+  boxShadow: 'none', // Removed shadow for a borderless look
+}));
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(4),
+  borderRadius: '8px',
+  boxShadow: 'none', // Removed shadow
+  backgroundColor: '#ffffff', // White background
+}));
+
+const StudentInfoBox = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: theme.spacing(4),
+}));
+
+const StudentDetails = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+}));
+
+const AvatarStyled = styled('div')(({ theme }) => ({
+  width: 80,
+  height: 80,
+  marginRight: theme.spacing(3),
+  borderRadius: '50%',
+  backgroundColor: theme.palette.primary.main,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#ffffff',
+  fontSize: '2rem',
+}));
+
+const QuizQuestionBox = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+}));
+
+const QuizDetailsPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  borderRadius: '8px',
+  boxShadow: 'none', // Removed shadow
+  backgroundColor: '#ffffff', // White background
+  maxHeight: '80vh',
+  overflowY: 'auto',
+}));
+
+const SubmitButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(3),
+}));
+
+const BackButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(3),
+}));
+
+const ScrollButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(1),
+}));
 
 const TakeQuizPage = () => {
   const { quizId } = useParams();
@@ -36,9 +105,6 @@ const TakeQuizPage = () => {
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState(
     JSON.parse(localStorage.getItem(`quiz-${quizId}-answers`)) || {}
-  );
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
-    JSON.parse(localStorage.getItem(`quiz-${quizId}-currentQuestionIndex`)) || 0
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -93,7 +159,7 @@ const TakeQuizPage = () => {
     };
 
     loadQuiz();
-  }, [quizId, student.id]);
+  }, [quizId, student.id, quizCountdown]);
 
   useEffect(() => {
     const storedCountdownComplete = JSON.parse(localStorage.getItem(`quiz-${quizId}-countdownComplete`));
@@ -132,13 +198,13 @@ const TakeQuizPage = () => {
     } else if (quizCountdown === 0 && !quizCompleted) {
       handleSubmit();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizCountdown, initialCountdown, quizCompleted, quizId]);
 
   // Save the quiz state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem(`quiz-${quizId}-currentQuestionIndex`, currentQuestionIndex);
-    localStorage.setItem(`quiz-${quizId}-quizCountdown`, JSON.stringify(quizCountdown));
-  }, [currentQuestionIndex, quizCountdown, quizId]);
+    localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(answers));
+  }, [answers, quizId]);
 
   const handleOptionChange = (questionId, optionText) => {
     const updatedAnswers = {
@@ -146,7 +212,6 @@ const TakeQuizPage = () => {
       [questionId]: optionText,
     };
     setAnswers(updatedAnswers);
-    localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
   };
 
   const handleTextAnswerChange = (questionId, value) => {
@@ -155,7 +220,6 @@ const TakeQuizPage = () => {
       [questionId]: value,
     };
     setAnswers(updatedAnswers);
-    localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
   };
 
   const handleSubmit = async () => {
@@ -174,8 +238,6 @@ const TakeQuizPage = () => {
       setSubmissionResult(percentage);
       setQuizCompleted(true);
       localStorage.removeItem(`quiz-${quizId}-answers`);
-      localStorage.removeItem(`quiz-${quizId}-currentQuestionIndex`);
-      localStorage.removeItem(`quiz-${quizId}-quizCountdown`);
       localStorage.removeItem(`quiz-${quizId}-initialCountdown`);
       localStorage.removeItem(`quiz-${quizId}-countdownComplete`);
     } catch (err) {
@@ -191,29 +253,30 @@ const TakeQuizPage = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
+      <StyledContainer maxWidth="lg">
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-          <CircularProgress size={60} />
+          <CircularProgress size={60} aria-label="loading-indicator" />
         </Box>
-      </Container>
+      </StyledContainer>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
+      <StyledContainer maxWidth="lg">
+        <Alert severity="error" aria-label="error-message">
+          {error}
+        </Alert>
+      </StyledContainer>
     );
   }
 
-  const totalQuestions = quiz.questions.length;
-
   return (
-    <Container maxWidth="lg" sx={{ marginTop: '2rem', padding: '2rem' }}>
+    <StyledContainer maxWidth="lg">
       <Grid container spacing={4}>
+        {/* Main Quiz Area */}
         <Grid item xs={12} md={9}>
-          <Paper elevation={3} sx={{ padding: '2rem' }}>
+          <StyledPaper>
             <Typography variant="h4" color="primary" fontWeight="bold" gutterBottom>
               {quiz?.quizName || quiz?.quiz_name}
             </Typography>
@@ -221,15 +284,14 @@ const TakeQuizPage = () => {
             {quizCompleted ? (
               <>
                 {submissionResult !== null && (
-                    <Box textAlign="center" my={4}>
+                  <Box textAlign="center" my={4}>
                     <Typography variant="h4" gutterBottom fontWeight="bold">
                       {submissionResult.toFixed(2)}%
                     </Typography>
                   </Box>
-                  
                 )}
                 {quiz.questions.map((question, index) => (
-                  <Box key={question.id} mb={4}>
+                  <QuizQuestionBox key={question.id}>
                     <Typography variant="h6" color="textSecondary" gutterBottom>
                       {`Question ${index + 1}: ${question.text}`}
                     </Typography>
@@ -280,17 +342,17 @@ const TakeQuizPage = () => {
                         })}
                       </RadioGroup>
                     )}
-                  </Box>
+                  </QuizQuestionBox>
                 ))}
                 <Box display="flex" justifyContent="center" mt={3}>
-                  <Button
+                  <BackButton
                     variant="contained"
                     color="primary"
                     onClick={() => navigate('/')}
                     endIcon={<DoneIcon />}
                   >
                     Back to Courses
-                  </Button>
+                  </BackButton>
                 </Box>
               </>
             ) : (
@@ -304,7 +366,7 @@ const TakeQuizPage = () => {
                 ) : (
                   <>
                     {quiz.questions.map((question, index) => (
-                      <Box key={question.id} mb={4} id={`question-${index + 1}`}>
+                      <QuizQuestionBox key={question.id} id={`question-${index + 1}`}>
                         <Typography variant="h6" color="textSecondary" gutterBottom>
                           {`Question ${index + 1}: ${question.text}`}
                         </Typography>
@@ -341,47 +403,27 @@ const TakeQuizPage = () => {
                             ))}
                           </RadioGroup>
                         )}
-                      </Box>
+                      </QuizQuestionBox>
                     ))}
-                    <Box display="flex" justifyContent="flex-end" mt={3}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSubmit}
-                        disabled={Object.keys(answers).length !== quiz.questions.length}
-                        endIcon={<DoneIcon />}
-                      >
-                        Submit Quiz
-                      </Button>
-                    </Box>
+                    <SubmitButton
+                      variant="contained"
+                      color="primary"
+                      onClick={handleSubmit}
+                      disabled={Object.keys(answers).length !== quiz.questions.length}
+                      endIcon={<DoneIcon />}
+                    >
+                      Submit Quiz
+                    </SubmitButton>
                   </>
                 )}
               </>
             )}
-          </Paper>
+          </StyledPaper>
         </Grid>
+
         {/* Side Panel */}
         <Grid item xs={12} md={3}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 1,
-              position: { md: 'sticky' },
-              top: { md: 80 },
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              '&::-webkit-scrollbar': {
-                width: '0.4em',
-              },
-              '&::-webkit-scrollbar-track': {
-                boxShadow: 'inset 0 0 6px rgba(0,0,0,0.1)',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: theme.palette.grey[400],
-                outline: '1px solid slategrey',
-              },
-            }}
-          >
+          <QuizDetailsPaper>
             <Typography variant="subtitle1" gutterBottom>
               Quiz Details
             </Typography>
@@ -422,16 +464,15 @@ const TakeQuizPage = () => {
                     </ListItem>
                   ))}
                 </List>
-                <Button
+                <ScrollButton
                   variant="contained"
                   color="secondary"
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  sx={{ mt: 1 }}
                 >
                   Scroll to Top
-                </Button>
+                </ScrollButton>
               </>
             )}
             {quizCompleted && (
@@ -449,7 +490,9 @@ const TakeQuizPage = () => {
                 </Typography>
                 <List dense>
                   {quiz.questions.map((question, index) => {
-                    const isCorrect = answers[question.id] === correctAnswers[question.id]?.[0]?.answerText;
+                    const isCorrect =
+                      answers[question.id] ===
+                      correctAnswers[question.id]?.[0]?.answerText;
                     return (
                       <ListItem key={question.id} sx={{ alignItems: 'flex-start' }}>
                         <ListItemIcon>
@@ -467,20 +510,20 @@ const TakeQuizPage = () => {
                     );
                   })}
                 </List>
-                <Button
+                <BackButton
                   variant="contained"
                   color="primary"
                   onClick={() => navigate('/')}
-                  sx={{ mt: 1 }}
+                  endIcon={<DoneIcon />}
                 >
                   Back to Courses
-                </Button>
+                </BackButton>
               </>
             )}
-          </Paper>
+          </QuizDetailsPaper>
         </Grid>
       </Grid>
-    </Container>
+    </StyledContainer>
   );
 };
 

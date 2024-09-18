@@ -30,17 +30,47 @@ router.get('/:studentId', async (req, res) => {
   }
 });
 
+const generateUniqueId = () => {
+  return Math.random().toString(36).substring(2, 8); // Generates a random 6-character alphanumeric string
+};
+
 // Create a new student
 router.post('/', async (req, res) => {
+  const { name, courseId } = req.body;
+
+  // Log received data
+  console.log('Received data:', req.body);
+
+  // Check if the necessary data is provided
+  if (!name || !courseId) {
+    console.log('Missing name or courseId:', { name, courseId });
+    return res.status(400).json({ error: "Name and courseId are required." });
+  }
+
   try {
     const student = await prisma.student.create({
-      data: req.body,
+      data: {
+        uniqueId: generateUniqueId(),  // Backend generates uniqueId
+        name,
+        courses: {
+          connect: { id: courseId },  // Connect to course by courseId
+        },
+      },
     });
+    // Log the created student for debugging
+    console.log('Created student:', student);
+
+    // Respond with the newly created student
     res.status(201).json(student);
   } catch (error) {
+    console.error('Error while creating student:', error);
     res.status(400).json({ error: error.message });
   }
 });
+
+
+
+
 
 // Update a student by ID
 router.put('/:studentId', async (req, res) => {

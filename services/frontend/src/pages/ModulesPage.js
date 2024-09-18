@@ -62,7 +62,7 @@ const ModulesPage = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const modulesPerPage = 5;
+  const modulesPerPage = 10;
 
   // Add/Edit Module Modal State
   const [openModuleModal, setOpenModuleModal] = useState(false);

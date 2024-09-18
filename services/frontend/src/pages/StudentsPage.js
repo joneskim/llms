@@ -14,6 +14,8 @@ import {
   InputAdornment,
   IconButton,
   Button,
+  Pagination,
+  Box
 } from '@mui/material';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -28,7 +30,7 @@ import {
   ErrorBox,
 } from './design/StyledComponents';
 import { fetchStudentsByCourseId, fetchQuizzesByStudentInCourse, addStudent } from '../services/fakeApi';
-import { styled } from '@mui/material/styles'; // Ensure styled is imported
+import { styled } from '@mui/material/styles';
 import AddStudentModal from './AddStudentModal';
 
 // Additional Styled Components specific to StudentsPage
@@ -58,6 +60,10 @@ const StudentsPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const studentsPerPage = 10;
 
   // Fetch students and their quiz results
   useEffect(() => {
@@ -90,16 +96,21 @@ const StudentsPage = () => {
     fetchData();
   }, [courseId]);
 
+  // Handle pagination
+  const indexOfLastStudent = currentPage * studentsPerPage;
+  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
+  const currentStudents = students.slice(indexOfFirstStudent, indexOfLastStudent);
+
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
   const handleRefresh = () => {
     setLoading(true);
     setError(null);
     setStudents([]);
     setQuizResults({});
-    // Re-fetch data by calling useEffect
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
       try {
         const studentsData = await fetchStudentsByCourseId(courseId);
         setStudents(studentsData);
@@ -161,11 +172,14 @@ const StudentsPage = () => {
 
   const handleAddStudent = async (newStudent) => {
     try {
-      // Simulate adding the student to the database (you should replace this with a real API call)
-      await addStudent(courseId, newStudent);
+      const response = await addStudent({
+        ...newStudent,
+        courseId, // Include courseId in the request body
+      });
 
-      // Update the state with the new student
-      setStudents([...students, newStudent]);
+      console.log('response', response);
+
+      setStudents([...students, response]); // Assuming response contains the new student
     } catch (error) {
       console.error('Error adding student:', error);
       setError('Unable to add student. Please try again.');
@@ -205,14 +219,7 @@ const StudentsPage = () => {
           <ArrowBackIosNewIcon />
         </BackButton>
         <Title variant="h5">Students Enrolled</Title>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setModalOpen(true)}
-        >
-          Add Student
-        </Button>
+      
       </Header>
 
       {/* Search Bar */}
@@ -233,7 +240,7 @@ const StudentsPage = () => {
       />
 
       {/* Students Table */}
-      {filteredStudents.length === 0 ? (
+      {currentStudents.length === 0 ? (
         <Typography variant="body1" color="textSecondary" align="center">
           No students match your search criteria.
         </Typography>
@@ -250,7 +257,7 @@ const StudentsPage = () => {
               </TableRow>
             </StyledTableHead>
             <TableBody>
-              {filteredStudents.map((student) => (
+              {currentStudents.map((student) => (
                 <StyledTableRow
                   key={student.id}
                   onClick={() => handleStudentClick(student.id)}
@@ -268,6 +275,39 @@ const StudentsPage = () => {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+<Box mt={4}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddStudent}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            padding: '10px 20px',
+          }}
+          fullWidth
+          aria-label="Create new quiz"
+        >
+          Add a student
+        </Button>
+      </Box>
+
+
+      {/* Pagination Controls */}
+      {filteredStudents.length > studentsPerPage && (
+        <Box display="flex" justifyContent="center" mt={2}>
+          <Pagination
+            count={Math.ceil(filteredStudents.length / studentsPerPage)}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
       )}
 
       {/* Add Student Modal */}

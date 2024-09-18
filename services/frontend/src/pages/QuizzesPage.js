@@ -72,7 +72,7 @@ const QuizzesPage = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const quizzesPerPage = 5;
+  const quizzesPerPage = 10;
 
   // Add Quiz Modal State
   const [openAddModal, setOpenAddModal] = useState(false);
