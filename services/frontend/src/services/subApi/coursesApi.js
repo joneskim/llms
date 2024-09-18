@@ -100,3 +100,16 @@ export const fetchAllQuizResultsForCourse = async (courseId) => {
       return [];
     }
   };
+
+  export const updateModule = async (moduleId, moduleName, description) => {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/modules/${moduleId}`, {
+        module_name: moduleName,
+        description,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating module:', error);
+      throw error;
+    }
+  }

@@ -1,5 +1,3 @@
-// src/pages/StudentsPage.jsx
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -15,10 +13,12 @@ import {
   Alert,
   InputAdornment,
   IconButton,
+  Button,
 } from '@mui/material';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import AddIcon from '@mui/icons-material/Add';
 import {
   StyledContainer,
   Header,
@@ -27,8 +27,9 @@ import {
   BackButton,
   ErrorBox,
 } from './design/StyledComponents';
-import { fetchStudentsByCourseId, fetchQuizzesByStudentInCourse } from '../services/fakeApi';
+import { fetchStudentsByCourseId, fetchQuizzesByStudentInCourse, addStudent } from '../services/fakeApi';
 import { styled } from '@mui/material/styles'; // Ensure styled is imported
+import AddStudentModal from './AddStudentModal';
 
 // Additional Styled Components specific to StudentsPage
 const StyledTableHead = styled(TableHead)({
@@ -56,6 +57,7 @@ const StudentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setModalOpen] = useState(false);
 
   // Fetch students and their quiz results
   useEffect(() => {
@@ -135,7 +137,8 @@ const StudentsPage = () => {
     return students.filter(
       (student) =>
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email.toLowerCase().includes(searchTerm.toLowerCase())
+        student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.uniqueId.toLowerCase().includes(searchTerm.toLowerCase()) // Allow search by unique ID
     );
   }, [students, searchTerm]);
 
@@ -154,6 +157,19 @@ const StudentsPage = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleAddStudent = async (newStudent) => {
+    try {
+      // Simulate adding the student to the database (you should replace this with a real API call)
+      await addStudent(courseId, newStudent);
+
+      // Update the state with the new student
+      setStudents([...students, newStudent]);
+    } catch (error) {
+      console.error('Error adding student:', error);
+      setError('Unable to add student. Please try again.');
+    }
   };
 
   if (loading) {
@@ -189,12 +205,20 @@ const StudentsPage = () => {
           <ArrowBackIosNewIcon />
         </BackButton>
         <Title variant="h5">Students Enrolled</Title>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setModalOpen(true)}
+        >
+          Add Student
+        </Button>
       </Header>
 
       {/* Search Bar */}
       <SearchField
         variant="outlined"
-        placeholder="Search by name or email"
+        placeholder="Search by name, email, or unique ID"
         value={searchTerm}
         onChange={handleSearchChange}
         size="small"
@@ -218,6 +242,7 @@ const StudentsPage = () => {
           <Table>
             <StyledTableHead>
               <TableRow>
+                <StyledTableCell>Unique ID</StyledTableCell>
                 <StyledTableCell>Name</StyledTableCell>
                 <StyledTableCell>Email</StyledTableCell>
                 <StyledTableCell>Quizzes Taken</StyledTableCell>
@@ -233,6 +258,7 @@ const StudentsPage = () => {
                   tabIndex={0}
                   aria-label={`View quizzes for ${student.name}`}
                 >
+                  <TableCell>{student.uniqueId}</TableCell>
                   <TableCell>{student.name}</TableCell>
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{quizResults[student.id]?.length || 0}</TableCell>
@@ -243,6 +269,13 @@ const StudentsPage = () => {
           </Table>
         </TableContainer>
       )}
+
+      {/* Add Student Modal */}
+      <AddStudentModal
+        open={isModalOpen}
+        onClose={() => setModalOpen(false)}
+        onAddStudent={handleAddStudent}
+      />
     </StyledContainer>
   );
 };

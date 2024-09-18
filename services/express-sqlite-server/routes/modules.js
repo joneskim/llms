@@ -42,16 +42,71 @@ router.get('/:moduleId', async (req, res) => {
 });
 
 // Create a new module
+// router.post('/', async (req, res) => {
+//   try {
+//     const module = await prisma.module.create({
+//       data: req.body,
+//     });
+//     res.status(201).json(module);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
+// router.post('/', async (req, res) => {
+//   try {
+//     const { module_name, description, courseId, startDate, endDate } = req.body;
+
+//     console.log('Received data:', req.body);
+
+//     // Ensure the courseId exists in the Course table
+//     const courseExists = await prisma.course.findUnique({
+//       where: { id: courseId },
+//     });
+
+//     if (!courseExists) {
+//       return res.status(404).json({ error: 'Course not found' });
+//     }
+
+//     // Create the module
+//     const module = await prisma.module.create({
+//       data: {
+//         module_name,
+//         description,
+//         courseId,
+//         startDate: new Date(startDate),  // assuming you want to store the start and end dates as DateTime
+//         endDate: new Date(endDate),      // in the module schema
+//       },
+//     });
+
+//     res.status(201).json(module);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
 router.post('/', async (req, res) => {
+  const { course_id, module_name, description } = req.body;
+
+  console.log('Received data:', req.body);
+  
+  if (!module_name || !course_id) {
+    return res.status(400).json({ error: "Module name and courseId are required." });
+  }
+
   try {
-    const module = await prisma.module.create({
-      data: req.body,
+    const newModule = await prisma.module.create({
+      data: {
+        module_name,
+        description,
+        courseId: course_id, // Ensure this matches your database schema
+      },
     });
-    res.status(201).json(module);
+    res.status(201).json(newModule);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
+
+
 
 // Update a module by ID
 router.put('/:moduleId', async (req, res) => {

@@ -56,3 +56,13 @@ export const markNotificationAsRead = async (notificationId) => {
     throw error;
   }
 };
+
+export const addStudent = async (studentData) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/students`, studentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding student:', error);
+    throw error;
+  }
+}

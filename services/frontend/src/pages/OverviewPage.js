@@ -20,17 +20,15 @@ import {
   ListItemText,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title as ChartTitle,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
-  TimeScale,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import {
@@ -53,12 +51,10 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 Chart.register(
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement, // Register BarElement for Bar Charts
   ChartTitle,
   ChartTooltip,
-  ChartLegend,
-  TimeScale
+  ChartLegend
 );
 
 // Styled Components
@@ -110,11 +106,14 @@ const StatisticIcon = styled(Box)(({ theme }) => ({
   fontSize: '2rem',
 }));
 
-const ChartContainer = styled(Paper)(({ theme }) => ({
+const ChartContainer = styled(Paper)(({ theme, eventCount }) => ({
   padding: theme.spacing(3),
   borderRadius: theme.shape.borderRadius,
   backgroundColor: theme.palette.background.paper,
   boxShadow: theme.shadows[1],
+  height: '600px', // Increased height for better visibility
+  width: `${Math.max(1500, eventCount * 100)}px`, // Dynamic width based on the number of events
+  overflowX: 'auto', // Enable horizontal scrolling
 }));
 
 const TableContainerStyled = styled(TableContainer)(({ theme }) => ({
@@ -144,6 +143,7 @@ const OverviewPage = () => {
   // Sorting Configuration
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'descending' });
 
+  // Fetch data on component mount
   useEffect(() => {
     const loadCourseData = async () => {
       try {
@@ -183,90 +183,64 @@ const OverviewPage = () => {
     loadCourseData();
   }, [courseId]);
 
-  // Combine recent quizzes and assignments
-  const recentResults = useMemo(() => {
-    const combined = [
-      ...quizResults.map((quiz) => ({
-        name: quiz.quizName || 'Unnamed Quiz',
-        averageScore: quiz.averageScore || 0,
-        type: 'Quiz',
-        date: quiz.date || new Date().toISOString(),
-        id: quiz.id,
-      })),
-      ...assignmentResults.map((assignment) => ({
-        name: assignment.assignmentName || 'Unnamed Assignment',
-        averageScore: assignment.averageScore || 0,
-        type: 'Assignment',
-        date: assignment.date || new Date().toISOString(),
-        id: assignment.id,
-      })),
-    ];
+  // Combine quizzes and assignments into a single sorted array
+  const combinedResults = useMemo(() => {
+    const quizzes = quizResults.map((quiz) => ({
+      id: quiz.id,
+      name: quiz.quizName || `Quiz ${quiz.id}`,
+      averageScore: quiz.averageScore || 0,
+      type: 'Quiz',
+      date: new Date(quiz.date),
+    }));
 
-    return combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const assignmentsData = assignmentResults.map((assignment) => ({
+      id: assignment.id,
+      name: assignment.assignmentName || `Assignment ${assignment.id}`,
+      averageScore: assignment.averageScore || 0,
+      type: 'Assignment',
+      date: new Date(assignment.date),
+    }));
+
+    // Merge and sort by date
+    return [...quizzes, ...assignmentsData].sort((a, b) => a.date - b.date);
   }, [quizResults, assignmentResults]);
 
-  // Sorted Results
-  const sortedResults = useMemo(() => {
-    const sortableResults = [...recentResults];
-    if (sortConfig !== null) {
-      sortableResults.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
+  // Generate unique labels for each event
+  const labels = useMemo(() => {
+    return combinedResults.map((result, index) => {
+      // Format date as Month Day, e.g., Jan 15
+      const formattedDate = result.date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
       });
-    }
-    return sortableResults;
-  }, [recentResults, sortConfig]);
+      return `${formattedDate} - ${result.type} ${index + 1}`;
+    });
+  }, [combinedResults]);
 
-  // Pagination Logic
-  const paginatedResults = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return sortedResults.slice(startIndex, startIndex + rowsPerPage);
-  }, [sortedResults, currentPage]);
-
-  // Prepare line chart data
-  const chartData = useMemo(() => {
-    const labels = recentResults.map((result) => new Date(result.date));
-    const quizScores = recentResults.map((result) =>
-      result.type === 'Quiz' ? result.averageScore : null
-    );
-    const assignmentScores = recentResults.map((result) =>
-      result.type === 'Assignment' ? result.averageScore : null
-    );
-
+  // Prepare the dataset with differentiated colors
+  const data = useMemo(() => {
     return {
       labels,
       datasets: [
         {
           label: 'Quiz Scores',
-          data: quizScores,
-          borderColor: '#42a5f5',
-          backgroundColor: 'rgba(66, 165, 245, 0.2)',
-          tension: 0.4,
-          fill: false,
-          spanGaps: true,
+          data: combinedResults.map((result) => (result.type === 'Quiz' ? result.averageScore : 0)),
+          backgroundColor: '#42a5f5', // Blue for Quizzes
         },
         {
           label: 'Assignment Scores',
-          data: assignmentScores,
-          borderColor: '#66bb6a',
-          backgroundColor: 'rgba(102, 187, 106, 0.2)',
-          tension: 0.4,
-          fill: false,
-          spanGaps: true,
+          data: combinedResults.map((result) => (result.type === 'Assignment' ? result.averageScore : 0)),
+          backgroundColor: '#66bb6a', // Green for Assignments
         },
       ],
     };
-  }, [recentResults]);
+  }, [labels, combinedResults]);
 
   // Chart options
-  const chartOptions = useMemo(
+  const options = useMemo(
     () => ({
       responsive: true,
+      maintainAspectRatio: false, // Allow the chart to adjust its height
       plugins: {
         legend: {
           position: 'top',
@@ -281,7 +255,12 @@ const OverviewPage = () => {
         tooltip: {
           callbacks: {
             label: function (context) {
-              return `Average Score: ${context.parsed.y}%`;
+              if (context.dataset.label === 'Quiz Scores') {
+                return `Quiz Score: ${context.parsed.y}%`;
+              } else if (context.dataset.label === 'Assignment Scores') {
+                return `Assignment Score: ${context.parsed.y}%`;
+              }
+              return `${context.dataset.label}: ${context.parsed.y}%`;
             },
           },
         },
@@ -289,6 +268,7 @@ const OverviewPage = () => {
       scales: {
         y: {
           beginAtZero: true,
+          max: 100, // Assuming scores are out of 100
           ticks: {
             color: 'text.secondary',
             font: {
@@ -304,19 +284,15 @@ const OverviewPage = () => {
           },
         },
         x: {
-          type: 'time',
-          time: {
-            unit: 'day',
-            displayFormats: {
-              day: 'MMM d',
-            },
-          },
           ticks: {
             color: 'text.secondary',
             font: {
               family: 'Roboto, sans-serif',
               size: 12,
             },
+            maxRotation: 90,
+            minRotation: 45,
+            autoSkip: false, // Ensure all labels are displayed
           },
           grid: {
             display: false,
@@ -326,6 +302,29 @@ const OverviewPage = () => {
     }),
     []
   );
+
+  // Sorted Results
+  const sortedResults = useMemo(() => {
+    const sortableResults = [...combinedResults];
+    if (sortConfig !== null) {
+      sortableResults.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableResults;
+  }, [combinedResults, sortConfig]);
+
+  // Pagination Logic
+  const paginatedResults = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return sortedResults.slice(startIndex, startIndex + rowsPerPage);
+  }, [sortedResults, currentPage]);
 
   // Handle Sorting
   const handleSort = (key) => {
@@ -520,18 +519,20 @@ const OverviewPage = () => {
       </Grid>
 
       {/* Chart Section */}
-      <ChartContainer>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.primary', marginBottom: 2 }}>
-          Recent Quiz and Assignment Results Over Time
-        </Typography>
-        {recentResults.length > 0 ? (
-          <Line data={chartData} options={chartOptions} />
-        ) : (
-          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            No recent results available.
+      <Box sx={{ overflowX: 'auto' }}>
+        <ChartContainer eventCount={combinedResults.length}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.primary', marginBottom: 2 }}>
+            Recent Quiz and Assignment Results Over Time
           </Typography>
-        )}
-      </ChartContainer>
+          {combinedResults.length > 0 ? (
+            <Bar data={data} options={options} />
+          ) : (
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+              No recent results available.
+            </Typography>
+          )}
+        </ChartContainer>
+      </Box>
 
       {/* Recent Results Table */}
       <Box marginTop={4}>

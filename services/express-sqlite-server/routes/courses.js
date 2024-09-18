@@ -153,7 +153,7 @@ router.get('/student/:studentId', async (req, res) => {
           quizId: quiz.id,
           quizName: quiz.quiz_name,
           totalScore: totalScore,
-          averageScore: Math.round(totalScore / quiz.results.length) * 100,
+          averageScore: Math.round(totalScore / quiz.results.length),
         };
       });
   

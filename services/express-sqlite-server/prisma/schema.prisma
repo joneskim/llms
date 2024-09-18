@@ -60,6 +60,8 @@ model Module {
   updatedAt   DateTime    @updatedAt
 }
 
+
+
 model Task {
   id        String   @id @default(uuid())
   taskName  String

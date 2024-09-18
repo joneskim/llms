@@ -2,6 +2,53 @@ const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker');
 const prisma = new PrismaClient();
 
+/**
+ * Helper function to generate a list of dates between two dates.
+ * @param {Date} start - Start date.
+ * @param {Date} end - End date.
+ * @returns {Date[]} - Array of Date objects.
+ */
+function generateDateRange(start, end) {
+  const dates = [];
+  let currentDate = new Date(start);
+  while (currentDate <= end) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return dates;
+}
+
+/**
+ * Helper function to format Date objects to ISO strings.
+ * @param {Date} date - Date object.
+ * @returns {string} - ISO formatted date string.
+ */
+function formatDate(date) {
+  return date.toISOString();
+}
+
+/**
+ * Helper function to get the next available date with less than maxEventsPerDay.
+ * @param {Date[]} shuffledDateRange - Shuffled array of Date objects.
+ * @param {Object} eventDateMap - Map tracking events per date.
+ * @param {number} maxEventsPerDay - Maximum allowed events per day.
+ * @returns {Date} - Next available Date object.
+ */
+function getNextAvailableDate(shuffledDateRange, eventDateMap, maxEventsPerDay) {
+  for (const date of shuffledDateRange) {
+    const dateKey = date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    if (!eventDateMap[dateKey]) {
+      eventDateMap[dateKey] = 1;
+      return new Date(date);
+    } else if (eventDateMap[dateKey] < maxEventsPerDay) {
+      eventDateMap[dateKey] += 1;
+      return new Date(date);
+    }
+  }
+  // If all dates are saturated, return a random date within the range
+  return faker.date.between({ from: shuffledDateRange[0], to: shuffledDateRange[shuffledDateRange.length - 1] });
+}
+
 async function main() {
   try {
     console.log('🌱 Starting database seeding...');
@@ -127,48 +174,69 @@ async function main() {
       }
     }
 
-    // 7. Seed Quizzes
-    console.log('📝 Seeding Quizzes...');
+    // 7. Define Controlled Time Window and Initialize Date Pool
+    console.log('📅 Initializing event date pool...');
+    const today = new Date();
+    const sixMonthsLater = new Date();
+    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+    const dateRange = generateDateRange(today, sixMonthsLater);
+
+    // Shuffle the date range to randomize event distribution
+    const shuffledDateRange = faker.helpers.shuffle(dateRange);
+
+    // Initialize a map to track the number of main events per day (Quizzes & Assignments)
+    const mainEventDateMap = {};
+    const maxMainEventsPerDay = 1; // One event per day to prevent overlap
+
+    // Initialize a map to track the number of quiz results per day
+    const quizResultDateMap = {};
+    const maxQuizResultsPerDay = 3; // Limit to 3 quiz results per day
+
+    // 8. Seed Quizzes and Assignments with Even Distribution
+    console.log('📝 Seeding Quizzes and Assignments with spread out dates...');
     const quizzes = [];
+    const assignments = [];
+
     for (const module of modules) {
+      // Randomly decide the number of quizzes and assignments per module
       const numberOfQuizzes = faker.number.int({ min: 2, max: 4 });
+      const numberOfAssignments = faker.number.int({ min: 1, max: 3 });
+
+      // Seed Quizzes
       for (let i = 1; i <= numberOfQuizzes; i++) {
-        const startDate = faker.date.past({ years: 1 });
-        const dueDate = faker.date.future({ years: 1, refDate: startDate });
+        const startDate = getNextAvailableDate(shuffledDateRange, mainEventDateMap, maxMainEventsPerDay);
+        const dueDate = new Date(startDate); // One-day event
+
         const quiz = await prisma.quiz.create({
           data: {
             quiz_name: `${module.module_name} - Quiz ${i}`,
             description: faker.lorem.sentences(),
             moduleId: module.id,
             averageScore: null,
-            start_date: startDate,
-            due_date: dueDate,
+            start_date: formatDate(startDate),
+            due_date: formatDate(dueDate),
           },
         });
         quizzes.push(quiz);
-        console.log(`✅ Quiz seeded: ${quiz.quiz_name}`);
+        console.log(`✅ Quiz seeded: ${quiz.quiz_name} (Date: ${startDate.toDateString()})`);
       }
-    }
 
-    // 8. Seed Assignments
-    console.log('📝 Seeding Assignments...');
-    const assignments = [];
-    for (const module of modules) {
-      const numberOfAssignments = faker.number.int({ min: 1, max: 3 });
+      // Seed Assignments
       for (let i = 1; i <= numberOfAssignments; i++) {
-        const startDate = faker.date.past({ years: 1 });
-        const dueDate = faker.date.future({ years: 1, refDate: startDate });
+        const startDate = getNextAvailableDate(shuffledDateRange, mainEventDateMap, maxMainEventsPerDay);
+        const dueDate = new Date(startDate); // One-day event
+
         const assignment = await prisma.assignment.create({
           data: {
             assignment_name: `${module.module_name} - Assignment ${i}`,
             description: faker.lorem.sentences(),
             moduleId: module.id,
-            start_date: startDate,
-            due_date: dueDate,
+            start_date: formatDate(startDate),
+            due_date: formatDate(dueDate),
           },
         });
         assignments.push(assignment);
-        console.log(`✅ Assignment seeded: ${assignment.assignment_name}`);
+        console.log(`✅ Assignment seeded: ${assignment.assignment_name} (Date: ${startDate.toDateString()})`);
       }
     }
 
@@ -216,14 +284,13 @@ async function main() {
       console.log(`✅ Correct Answer seeded for Question ID: ${question.id}`);
     }
 
-    // 11. Seed Student Quiz Results
-    console.log('📊 Seeding Student Quiz Results...');
-    for (const student of students) {
-      const numberOfQuizzesTaken = faker.number.int({ min: 10, max: 20 });
-      const shuffledQuizzes = faker.helpers.shuffle(quizzes);
-      const takenQuizzes = shuffledQuizzes.slice(0, numberOfQuizzesTaken);
+    // 11. Seed Student Quiz Results with Spread Out Dates and Calculated Scores
+    console.log('📊 Seeding Student Quiz Results with calculated scores...');
+    for (const quiz of quizzes) {
+      let totalScoreSum = 0; // Sum of all scores for this quiz
+      let totalResults = 0;  // Number of results for this quiz
 
-      for (const quiz of takenQuizzes) {
+      for (const student of students) {
         const module = await prisma.module.findUnique({
           where: { id: quiz.moduleId },
           select: { courseId: true },
@@ -253,24 +320,41 @@ async function main() {
           continue;
         }
 
-        const score = faker.number.int({ min: 0, max: 100 });
-        const completedAt = faker.date.past({ years: 1 });
+        const answersData = await generateAnswersForQuiz(quiz.id);
+        const correctAnswers = answersData.filter(answer => answer.isCorrect).length;
+        const score = Math.round((correctAnswers / answersData.length) * 100);
 
-        const answersData = await generateAnswersForQuiz(quiz.id, score);
+        totalScoreSum += score;
+        totalResults++;
+
+        const completedAt = assignResultDate(quiz, quizResultDateMap, maxQuizResultsPerDay);
 
         await prisma.studentQuizResult.create({
           data: {
             studentId: student.id,
             quizId: quiz.id,
             score,
-            completedAt,
+            completedAt: formatDate(completedAt),
             answers: {
-              create: answersData,
+              create: answersData.map(answer => ({
+                answerText: answer.answerText,
+                questionId: answer.questionId,
+              })),
             },
           },
         });
 
-        console.log(`✅ Quiz Result seeded for Student ID: ${student.id}, Quiz ID: ${quiz.id}, Score: ${score}`);
+        console.log(`✅ Quiz Result seeded for Student ID: ${student.id}, Quiz ID: ${quiz.id}, Score: ${score}, Completed At: ${completedAt.toDateString()}`);
+      }
+
+      // Update quiz with the average score
+      if (totalResults > 0) {
+        const averageScore = Math.round(totalScoreSum / totalResults);
+        await prisma.quiz.update({
+          where: { id: quiz.id },
+          data: { averageScore },
+        });
+        console.log(`📊 Quiz ID: ${quiz.id} updated with Average Score: ${averageScore}`);
       }
     }
 
@@ -282,7 +366,7 @@ async function main() {
         await prisma.notification.create({
           data: {
             message: faker.lorem.sentence(),
-            date: faker.date.recent(),
+            date: formatDate(faker.date.recent()),
             teacherId: teacher.id,
           },
         });
@@ -296,7 +380,7 @@ async function main() {
         await prisma.notification.create({
           data: {
             message: faker.lorem.sentence(),
-            date: faker.date.recent(),
+            date: formatDate(faker.date.recent()),
             studentId: student.id,
           },
         });
@@ -312,24 +396,75 @@ async function main() {
   }
 }
 
-// Helper function to generate answers for a quiz based on score
-async function generateAnswersForQuiz(quizId, score) {
+/**
+ * Helper function to assign a completedAt date for a quiz result.
+ * Ensures that the date is within 1-7 days after the quiz date
+ * and does not exceed the maximum number of results per day.
+ * @param {Object} quiz - Quiz object containing start_date.
+ * @param {Object} quizResultDateMap - Map tracking quiz results per date.
+ * @param {number} maxQuizResultsPerDay - Maximum allowed quiz results per day.
+ * @returns {Date} - Assigned completedAt Date object.
+ */
+function assignResultDate(quiz, quizResultDateMap, maxQuizResultsPerDay) {
+  const quizDate = new Date(quiz.start_date);
+  const windowStart = new Date(quizDate);
+  windowStart.setDate(windowStart.getDate() + 1); // 1 day after quiz date
+  const windowEnd = new Date(quizDate);
+  windowEnd.setDate(windowEnd.getDate() + 7); // 7 days after quiz date
+
+  const resultDateRange = generateDateRange(windowStart, windowEnd);
+  const shuffledResultDates = faker.helpers.shuffle(resultDateRange);
+
+  for (const date of shuffledResultDates) {
+    const dateKey = date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    if (!quizResultDateMap[dateKey] || quizResultDateMap[dateKey] < maxQuizResultsPerDay) {
+      if (!quizResultDateMap[dateKey]) {
+        quizResultDateMap[dateKey] = 1;
+      } else {
+        quizResultDateMap[dateKey] += 1;
+      }
+      return new Date(date);
+    }
+  }
+
+  // If no date available in window, assign a random date within the 6-month pool
+  // For simplicity, use the main event date pool to avoid creating a new date pool
+  // You can create a separate pool if needed
+  const sixMonthsLater = new Date(quizDate);
+  sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+  const randomDate = faker.date.between({ from: windowEnd, to: sixMonthsLater });
+  const randomDateKey = randomDate.toISOString().split('T')[0];
+  if (!quizResultDateMap[randomDateKey] || quizResultDateMap[randomDateKey] < maxQuizResultsPerDay) {
+    if (!quizResultDateMap[randomDateKey]) {
+      quizResultDateMap[randomDateKey] = 1;
+    } else {
+      quizResultDateMap[randomDateKey] += 1;
+    }
+    return new Date(randomDate);
+  }
+
+  // As a last resort, allow exceeding the max
+  return new Date(randomDate);
+}
+
+/**
+ * Helper function to generate answers for a quiz based on random correctness
+ * @param {number} quizId - ID of the quiz
+ * @returns {Array} - Array of answer objects to be inserted
+ */
+async function generateAnswersForQuiz(quizId) {
   const questions = await prisma.question.findMany({
     where: { quizId },
     include: { correctAnswer: true, options: true },
   });
 
-  const totalQuestions = questions.length;
-  const correctAnswersCount = Math.round((score / 100) * totalQuestions);
-
-  const shuffledQuestions = faker.helpers.shuffle(questions);
-  const correctlyAnsweredQuestions = shuffledQuestions.slice(0, correctAnswersCount);
-
   const answersData = [];
 
   for (const question of questions) {
+    const isCorrect = faker.datatype.boolean(); // Randomly determine if the answer is correct
     let answerText;
-    if (correctlyAnsweredQuestions.includes(question)) {
+
+    if (isCorrect) {
       answerText = question.correctAnswer.answerText;
     } else {
       const incorrectOptions = question.options.filter(
@@ -342,6 +477,7 @@ async function generateAnswersForQuiz(quizId, score) {
     answersData.push({
       answerText,
       questionId: question.id,
+      isCorrect, // Include this if needed in your logic, otherwise remove it
     });
   }
 
