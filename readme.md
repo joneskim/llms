@@ -68,3 +68,7 @@ making it ideal for local deployments, especially in environments with limited r
 Local Area Network (LAN): The system will be designed to operate over a Local Area Network, ensuring full functionality in environments with 
 limited or no internet connectivity. This setup is particularly advantageous for schools with existing computer labs, allowing them to deploy 
 the LLMS effectively and reliably. -> Can use a flash drive delivery method.
+
+
+## Oasis LMS via WhatsApp
+Oasis LMS in `services/oasis_lms` is a small FastAPI service that provides a WhatsApp-based learning interface. It uses a collection of "smol" agents for tasks like progress tracking, quiz generation, and teacher broadcasts. See `services/oasis_lms/README.md` for setup details.
