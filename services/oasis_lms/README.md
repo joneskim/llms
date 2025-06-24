@@ -1,6 +1,6 @@
 # Oasis LMS - WhatsApp Learning Management System
 
-Oasis LMS delivers lessons and assessments through WhatsApp using a lightweight agent architecture inspired by **smolagents**. Each incoming message is processed by small, single-responsibility agents that can be combined for more advanced workflows.
+Oasis LMS delivers lessons and assessments through WhatsApp using a lightweight agent architecture inspired by **smolagents**. Each incoming message is processed by small, single-responsibility agents that can be combined for more advanced workflows. Teachers can post quiz questions from WhatsApp, and students reply directly in the chat with automatic marking.
 
 ## Setup
 
@@ -41,6 +41,8 @@ Teachers can interact with the bot from phone numbers specified in `TEACHER_NUMB
 Available commands:
 
 ```
-broadcast <message>  # send a note to every student
-history <number>     # view recent messages from a student
+broadcast <message>        # send a note to every student
+history <number>           # view recent messages from a student
+ask <question>|<answer>    # distribute a quiz question
+results <number>           # see quiz results for a student
 ```
