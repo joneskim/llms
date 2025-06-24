@@ -71,4 +71,4 @@ the LLMS effectively and reliably. -> Can use a flash drive delivery method.
 
 
 ## Oasis LMS via WhatsApp
-Oasis LMS in `services/oasis_lms` is a small FastAPI service that provides a WhatsApp-based learning interface. It uses a collection of "smol" agents for tasks like progress tracking and quiz generation. See `services/oasis_lms/README.md` for setup details.
+Oasis LMS in `services/oasis_lms` is a small FastAPI service that provides a WhatsApp-based learning interface. It uses a collection of "smol" agents for tasks like progress tracking, quiz generation, and teacher broadcasts. See `services/oasis_lms/README.md` for setup details.

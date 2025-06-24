@@ -45,13 +45,64 @@ class StudentSessionAgent:
         self.progress = ProgressTrackingAgent()
         self.language_adapter = LanguageAdapterAgent()
         self.generator = GenerateQuestionsAgent()
+        self.pending: Dict[str, List[str]] = {}
+
+    def add_pending_message(self, user: str, msg: str) -> None:
+        self.pending.setdefault(user, []).append(msg)
 
     def handle_message(self, message: str, user: str) -> str:
         self.progress.log(user, message)
-        # Simple logic: echo message and show history length.
+
+        pending = self.pending.pop(user, [])
         history_len = len(self.progress.get_history(user))
+
         reply = (
             f"Oasis LMS received your message: '{message}'. "
             f"You have sent {history_len} messages so far."
         )
+
+        if pending:
+            teacher_notes = "\n".join(pending)
+            reply = f"Teacher says: {teacher_notes}\n" + reply
+
         return reply
+
+
+class TeacherSessionAgent:
+    """Handles teacher commands and manages student sessions."""
+
+    def __init__(self, student_agent: StudentSessionAgent) -> None:
+        self.students = student_agent
+        self.progress = ProgressTrackingAgent()
+
+    def handle_message(self, message: str, user: str) -> str:
+        self.progress.log(user, message)
+
+        command = message.strip()
+        lower = command.lower()
+
+        if lower.startswith("broadcast "):
+            note = command[len("broadcast ") :]
+            all_students = (
+                set(self.students.progress.history.keys())
+                | set(self.students.pending.keys())
+            )
+            if not all_students:
+                return "No students have interacted yet."
+            for student in all_students:
+                self.students.add_pending_message(student, note)
+            return "Broadcast sent to all students."
+
+        if lower.startswith("history "):
+            number = command[len("history ") :].strip()
+            history = self.students.progress.get_history(number)
+            if not history:
+                return f"No history for {number}."
+            last = "; ".join(history[-5:])
+            return f"Last messages from {number}: {last}"
+
+        return (
+            "Teacher commands:\n"
+            "broadcast <msg> - send a message to all students\n"
+            "history <number> - show recent messages from a student"
+        )
